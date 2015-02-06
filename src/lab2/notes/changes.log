@@ -1,0 +1,26 @@
+Only in reference/Mazewar/: .gitignore
+Only in reference/Mazewar/: .idea
+Only in reference/Mazewar/: ActionPacket.java
+Files git_workspace/ECE419/src/lab2/mazewar/Client.java and reference/Mazewar/Client.java differ
+Only in reference/Mazewar/: ClientEngineReceiver.java
+Only in reference/Mazewar/: ClientEngineSender.java
+Only in reference/Mazewar/: ClientEngineWorker.java
+Files git_workspace/ECE419/src/lab2/mazewar/DirectedPoint.java and reference/Mazewar/DirectedPoint.java differ
+Files git_workspace/ECE419/src/lab2/mazewar/Direction.java and reference/Mazewar/Direction.java differ
+Files git_workspace/ECE419/src/lab2/mazewar/GUIClient.java and reference/Mazewar/GUIClient.java differ
+Files git_workspace/ECE419/src/lab2/mazewar/Makefile and reference/Mazewar/Makefile differ
+Files git_workspace/ECE419/src/lab2/mazewar/Makefile.dep and reference/Mazewar/Makefile.dep differ
+Files git_workspace/ECE419/src/lab2/mazewar/Maze.java and reference/Mazewar/Maze.java differ
+Only in reference/Mazewar/: MazeAssignment.iml
+Files git_workspace/ECE419/src/lab2/mazewar/MazeImpl.java and reference/Mazewar/MazeImpl.java differ
+Files git_workspace/ECE419/src/lab2/mazewar/Mazewar.java and reference/Mazewar/Mazewar.java differ
+Only in reference/Mazewar/: MazewarServer.java
+Only in reference/Mazewar/: MazewarServerClient.java
+Only in reference/Mazewar/: MazewarServerProcessThread.java
+Only in reference/Mazewar/: MazewarServerTickThread.java
+Only in reference/Mazewar/: out
+Files git_workspace/ECE419/src/lab2/mazewar/OverheadMazePanel.java and reference/Mazewar/OverheadMazePanel.java differ
+Files git_workspace/ECE419/src/lab2/mazewar/Point.java and reference/Mazewar/Point.java differ
+Only in reference/Mazewar/: README.md
+Files git_workspace/ECE419/src/lab2/mazewar/run.sh and reference/Mazewar/run.sh differ
+Only in reference/Mazewar/: ServerConnection.java
