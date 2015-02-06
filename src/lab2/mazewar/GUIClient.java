@@ -17,8 +17,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 USA.
 */
 
-import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * An implementation of {@link LocalClient} that is controlled by the keyboard
@@ -29,7 +33,10 @@ import java.awt.event.KeyEvent;
 
 public class GUIClient extends LocalClient implements KeyListener {
 
-        /**
+	    final public Queue<DataPacket> input = new ConcurrentLinkedQueue<DataPacket>();
+	    final public Queue<DataPacket> output = new ConcurrentLinkedQueue<DataPacket>();
+	
+		/**
          * Create a GUI controlled {@link LocalClient}.  
          */
         public GUIClient(String name) {
