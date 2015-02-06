@@ -1,9 +1,9 @@
-ActionPacket.java
-ClientEngineReceiver.java
-ClientEngineSender.java
+ActionPacket.java - DataPacket.java
+ClientEngineReceiver.java - ClientReceiverThread.java
+ClientEngineSender.java - ClientSenderThread.java
 ClientEngineWorker.java
 MazewarServer.java
 MazewarServerClient.java
 MazewarServerProcessThread.java
 MazewarServerTickThread.java
-ServerConnection.java
+ServerConnection.java - ConnectServer.java
