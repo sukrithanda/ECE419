@@ -9,12 +9,10 @@ public class DataPacket implements Serializable {
     public static final int PLAYER_RESPAWN = 15;
     public static final int GET_ID = 16;
     public static final int SET_ID = 17;
-    public static final int JOIN_PLAYER = 18;
-    public static final int REMOVE_PLAYER = 19;
     
-    public static final int ADD = 21;
-    public static final int REMOVE = 22;
-    public static final int SHOOT = 23;
+    public static final int ADD_PLAYER = 21;
+    public static final int REMOVE_PLAYER = 22;
+    public static final int FIRE = 23;
     public static final int LEFT = 24;
     public static final int RIGHT = 25;
     public static final int FORWARD = 26;
@@ -33,19 +31,19 @@ public class DataPacket implements Serializable {
         String status = "";
         
         switch (type) {
-        case START:
+        case START_GAME:
             status = "START";
             break;
-        case READY:
+        case PLAYER_READY:
             status = "READY";
             break;
         case ERROR:
             status = "ERROR";
             break;
-        case KILLED:
+        case PLAYER_KILLED:
             status = "KILLED";
             break;
-        case RESPAWN:
+        case PLAYER_RESPAWN:
             status = "RESPAWN";
             break;
         case GET_ID:
@@ -54,14 +52,14 @@ public class DataPacket implements Serializable {
         case SET_ID:
             status = "SET_ID";
             break;
-        case ADD:
-            status = "ADD";
+        case ADD_PLAYER:
+            status = "ADD_PLAYER";
             break;
-        case REMOVE:
-            status = "REMOVE";
+        case REMOVE_PLAYER:
+            status = "REMOVE_PLAYER";
             break;
-        case SHOOT:
-            status = "SHOOT";
+        case FIRE:
+            status = "FIRE";
             break;
         case LEFT:
             status = "LEFT";

@@ -113,7 +113,12 @@ public abstract class Client {
          * Name of the client.
          */
         private String name = null;
-       
+        
+        /**
+         * ID of the client
+         */
+        public int id = Integer.MIN_VALUE;
+        
         /** 
          * Create a new client with the specified name.
          */

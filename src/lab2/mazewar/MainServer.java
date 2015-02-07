@@ -8,7 +8,8 @@ public class MainServer{
 	//using vectors because they are thread safe
 	public Vector<ClientTracker> clients = new Vector<ClientTracker>();
 	public Vector<DataPacket> action_history = new Vector<DataPacket>();
-
+	public static ServerSocket serverSocket = null;
+	
 	//thread safe FIFO queue
   //  public Queue<DataPacket> incomingQ = new ConcurrentLinkedQueue<DataPacket>();
     public Queue<DataPacket> bufferQ = new ConcurrentLinkedQueue<DataPacket>();
@@ -31,30 +32,31 @@ public class MainServer{
             System.err.println("ERROR: Could not listen on port!");
             System.exit(-1);
 
-       //MainServerThread tickThread = new MainServerThread(server, 20);
-       // tickThread.start();
-
-       // MazewarServerProcessThread processThread = new MazewarServerProcessThread(server);
-       // processThread.start();
-
-
-        while(true){
-            //Listen for incoming connections, and create new sockets.
-            System.out.println("Waiting for new connection...");
-            Socket incoming = serverSocket.accept();
-            System.out.println("New client accepted.");
-
-         //   if(server.gameState != server.STATE_SETUP){
-                // Reject client, since game is in progress.
-           // }else{
-                ClientTracker createPlayer = new ClientTracker(incoming);
-                server.clients.add(createPlayer);
-
-                System.out.println("Spawning new thread.");
-
-                ServerThread clientHandler = new ServerThread(server, createPlayer);
-                clientHandler.start();
-          //  }
-        }
+	       //MainServerThread tickThread = new MainServerThread(server, 20);
+	       // tickThread.start();
+	
+	       // MazewarServerProcessThread processThread = new MazewarServerProcessThread(server);
+	       // processThread.start();
+	
+	
+	        while(true){
+	            //Listen for incoming connections, and create new sockets.
+	            System.out.println("Waiting for new connection...");
+	            Socket incoming = serverSocket.accept();
+	            System.out.println("New client accepted.");
+	
+	         //   if(server.gameState != server.STATE_SETUP){
+	                // Reject client, since game is in progress.
+	           // }else{
+	                ClientTracker createPlayer = new ClientTracker(incoming);
+	                server.clients.add(createPlayer);
+	
+	                System.out.println("Spawning new thread.");
+	
+	                ServerThread clientHandler = new ServerThread(server, createPlayer);
+	                clientHandler.start();
+	          //  }
+	        }
+	    }
     }
 }

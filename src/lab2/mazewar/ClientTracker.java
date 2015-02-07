@@ -7,8 +7,8 @@ class ClientTracker {
     //Static variables since we want to keep track of all clients and their starting points!
     public static int numberofClients = 0;
     public static Vector<Point> startingPoints = new Vector<Point>();
-    public static int startingX =0
-    public static int startingY=0
+    public static int startingX = 0;
+    public static int startingY= 0;
 
     public Socket socket;
     public ObjectOutputStream outStream = null;
@@ -31,7 +31,7 @@ class ClientTracker {
 
         while (exists){
             for(int i = 0; i < startingPoints.size(); i++){
-                if( (startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY){
+                if (startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY) {
                     exists = true;
                     startingY +=5;
                     startingX +=2;
@@ -59,5 +59,4 @@ class ClientTracker {
         this.outStream.writeObject(obj);
     }
     	
-    }
 }

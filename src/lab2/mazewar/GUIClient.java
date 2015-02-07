@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GUIClient extends LocalClient implements KeyListener {
 
+	    final public ConcurrentHashMap id_client = new ConcurrentHashMap();
+	    public AtomicBoolean init_check = new AtomicBoolean(false);
+	    public AtomicBoolean start_check = new AtomicBoolean(false);
 	    final public Queue<DataPacket> input = new ConcurrentLinkedQueue<DataPacket>();
 	    final public Queue<DataPacket> output = new ConcurrentLinkedQueue<DataPacket>();
 	
@@ -48,26 +51,54 @@ public class GUIClient extends LocalClient implements KeyListener {
          * @param e The {@link KeyEvent} that occurred.
          */
         public void keyPressed(KeyEvent e) {
-                // If the user pressed Q, invoke the cleanup code and quit. 
-                if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
-                        Mazewar.quit();
-                // Up-arrow moves forward.
-                } else if(e.getKeyCode() == KeyEvent.VK_UP) {
-                        forward();
-                // Down-arrow moves backward.
-                } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                        backup();
-                // Left-arrow turns left.
-                } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
-                        turnLeft();
-                // Right-arrow turns right.
-                } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-                        turnRight();
-                // Spacebar fires.
-                } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        fire();
-                }
+            DataPacket data = new DataPacket();
+            data.name = getName();
+            data.id = id;
+
+            // If the user pressed Q, invoke the cleanup code and quit.
+            if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
+                Mazewar.quit();
+            // Up-arrow moves forward.
+            } else if(e.getKeyCode() == KeyEvent.VK_UP) {
+            	data.type = data.FORWARD;
+            // Down-arrow moves backward.
+            } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+            	data.type = data.BACKWARD;
+            // Left-arrow turns left.
+            } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+            	data.type = data.LEFT;
+            // Right-arrow turns right.
+            } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+            	data.type = data.RIGHT;
+            // Spacebar fires.
+            } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+            	data.type = data.FIRE;
+            }
+
+            output.offer(data);
         }
+        
+//        public void keyPressed(KeyEvent e) {
+//                // If the user pressed Q, invoke the cleanup code and quit. 
+//                if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
+//                        Mazewar.quit();
+//                // Up-arrow moves forward.
+//                } else if(e.getKeyCode() == KeyEvent.VK_UP) {
+//                        forward();
+//                // Down-arrow moves backward.
+//                } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
+//                        backup();
+//                // Left-arrow turns left.
+//                } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
+//                        turnLeft();
+//                // Right-arrow turns right.
+//                } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
+//                        turnRight();
+//                // Spacebar fires.
+//                } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+//                        fire();
+//                }
+//        }
         
         /**
          * Handle a key release. Not needed by {@link GUIClient}.
@@ -83,4 +114,40 @@ public class GUIClient extends LocalClient implements KeyListener {
         public void keyTyped(KeyEvent e) {
         }
 
+        public boolean setupPlayer () {
+            DataPacket data = new DataPacket();
+            data.name = getName();
+            data.type = data.GET_ID;
+            output.offer(data);
+            return true;
+        }
+
+        public boolean addPlayer () {
+            DataPacket data = new DataPacket();
+            data.type = DataPacket.ADD_PLAYER;
+            data.name = getName();
+            data.id = id;
+            output.offer(data);
+            return true;
+        }
+
+        public boolean playerReady () {
+            DataPacket data = new DataPacket();
+            data.name = getName();
+            data.id = id;
+            data.type = DataPacket.PLAYER_READY; 
+            output.offer(data);
+            return true;
+        }
+        
+        public boolean playerKilled (Direction direction, Point point) {
+            DataPacket data = new DataPacket();
+            data.point = point;
+            data.direction = direction;
+            data.type = DataPacket.PLAYER_KILLED;
+            data.name = getName();
+            data.id = id;
+            output.offer(data);
+            return true;
+        }
 }

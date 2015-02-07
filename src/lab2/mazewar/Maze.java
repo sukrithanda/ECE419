@@ -55,8 +55,9 @@ public abstract class Maze {
     /** 
      * Add a {@link Client} at random location in the {@link Maze}. 
      * @param client {@link Client} to be added to the {@link Maze}.
+     * @param position {@link Client} in the {@link Maze}.
      */
-    public abstract void addClient(Client client);
+    public abstract void addClient(Client client, DirectedPoint position);
 
     /** 
      * Create a new {@link Projectile} from the specified {@link Client}
@@ -64,12 +65,20 @@ public abstract class Maze {
      * @return <code>false</code> on failure, <code>true</code> on success. */
     public abstract boolean clientFire(Client client);
     
+    /**
+     * Regenerate a {@link Client} at random location in the {@link Maze}.
+     * @param client {@link Client} to be added to the {@link Maze}.
+     * @param direction of the client in the {@link Maze}.
+     * @param position of the client in the {@link Maze}.   
+     */
+    public abstract void regenClient(Client client, Direction direction, Point position);
+    
     /** 
      * Remove the specified {@link Client} from the {@link Maze} 
      * @param client {@link Client} to be removed.
      */
     public abstract void removeClient(Client client);
-
+    
     /** 
      * Find out where a specified {@link Client} is located 
      * in the {@link Maze}.

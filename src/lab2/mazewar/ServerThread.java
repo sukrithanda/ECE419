@@ -21,12 +21,12 @@ class ServerThread extends Thread {
                
                 DataPacket outgoing_packet = new DataPacket();
 
-                switch (incoming_packet.packet_type){
-                    case DataPacket.JOIN_PLAYER:
+                switch (incoming_packet.type){
+                    case DataPacket.ADD_PLAYER:
                         if(server.currentState == 0){
                             //outgoing_packet = incoming_packet;
                             outgoing_packet.id = this.client.id;
-                            outgoing_packet.packet_type = DataPacket.JOIN_PLAYER;
+                            outgoing_packet.type = DataPacket.ADD_PLAYER;
                             outgoing_packet.direction = this.client.startingDirection;
                             outgoing_packet.point = this.client.startingPoint;
                             
@@ -37,48 +37,45 @@ class ServerThread extends Thread {
 
                             // Send all existing data to the client.
                            
-                            for(int i = 0; i < server.allActions.size(); i++){
-                                this.client.sendObject(server.allActions.get(i));
+                            for(int i = 0; i < server.action_history.size(); i++){
+                                this.client.sendObject(server.action_history.get(i));
                             }
-                            outgoing_packet.order = this.server.packetCount++;
+                            outgoing_packet.check = this.server.packetCount++;
 
                             this.server.bufferQ.add(outgoing_packet);
-
-
-
-                       // }
+                        }
                         break;
 
                    case DataPacket.PLAYER_READY:
-                        if(server.gameState == 0){
+                        if(server.currentState == 0){
                             this.client.isReady = true;
                             
                             // Check if all clients are set as ready
                             boolean start_game = true;
 
-                            Iterator i = server.clients.iterator();
+                            Iterator<ClientTracker> itr = server.clients.iterator();
 
-                            while(i.hasNext()){
-                                if (i.isReady == false){
-                                    start_game == false;
+                            while(itr.hasNext()){
+                                if (itr.next().isReady == false){
+                                    start_game = false;
                                 }
                             }
                             // If so, notify everyone that the game is beginning
                             if(start_game){
                                 //game has started
-                                server.gameState = 1;
-                                outgoing_packet.client_id = -1;
-                                outgoing_packet.packet_type = DataPacket.START_GAME;
-                                 outgoing_packet.order = this.server.packetCount++;
+                                server.currentState = 1;
+                                outgoing_packet.id = -1;
+                                outgoing_packet.type = DataPacket.START_GAME;
+                                 outgoing_packet.check = this.server.packetCount++;
                                 this.server.bufferQ.add(outgoing_packet);
                             }
                         }
                     case DataPacket.PLAYER_KILLED:
-                        if(server.gameState == server.STATE_PLAYING){
+                        if(server.currentState == server.STATE_PLAYING){
                             // Pick a random starting point, and check to see if it is already occupied
                             outgoing_packet = incoming_packet;
-                            outgoing_packet.packet_type = DataPacket.PLAYER_RESPAWN;
-                             outgoing_packet.order = this.server.packetCount++;
+                            outgoing_packet.type = DataPacket.PLAYER_RESPAWN;
+                             outgoing_packet.check = this.server.packetCount++;
 
                             this.server.bufferQ.add(outgoing_packet);
                         }
@@ -92,9 +89,9 @@ class ServerThread extends Thread {
                 e.printStackTrace();
 
                 DataPacket disconnect = new DataPacket();
-                disconnect.client_id = this.client.id;
-                disconnect.packet_type = DataPacket.REMOVE_PLAYER;
-                disconnect.order = this.server.packetCount++;
+                disconnect.id = this.client.id;
+                disconnect.type = DataPacket.REMOVE_PLAYER;
+                disconnect.check = this.server.packetCount++;
                 this.server.bufferQ.add(disconnect);
                 this.server.clients.remove(this.client);
 

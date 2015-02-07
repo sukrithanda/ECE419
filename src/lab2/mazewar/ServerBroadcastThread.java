@@ -4,24 +4,24 @@ import java.util.Random;
 
 public class ServerBroadcastThread extends Thread {
     //int tickRate;
-    MazewarServer server = null;
+    MainServer server = null;
 
-    public ServerBroadcastThread(MazewarServer server) {
+    public ServerBroadcastThread(MainServer server) {
         this.server = server;
     }
 
     public void run() {
-        //Clear packets from the outgoingBuffer n times per second.
+        //Clear packets from the bufferQ n times per second.
         //long timeBetweenTicks = 1000/tickRate;
 
         while (true){
             
             // Build a serialiazable packet
-            DataPacket bufferContents[] = server.outgoingBuffer.toArray(new DataPacket[server.outgoingBuffer.size()]);
+            DataPacket bufferContents[] = server.bufferQ.toArray(new DataPacket[server.bufferQ.size()]);
 
             // Backup the actions and send clear the buffer.
-            server.allActions.addAll(server.outgoingBuffer);
-            server.outgoingBuffer.clear();
+            server.action_history.addAll(server.bufferQ);
+            server.bufferQ.clear();
 
             Enumeration enum_clients = server.clients.elements();
             while (enum_clients.hasMoreElements()){
