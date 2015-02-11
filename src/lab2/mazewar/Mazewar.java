@@ -141,22 +141,66 @@ public class Mazewar extends JFrame {
                 
                 // You may want to put your network initialization code somewhere in
                 // here.
-                
-                // Create the GUIClient and connect it to the KeyListener queue
-                guiClient = new GUIClient(name);
-                maze.addClient(guiClient);
-                this.addKeyListener(guiClient);
-                
-                // Use braces to force constructors not to be called at the beginning of the
-                // constructor.
-                {
-                        maze.addClient(new RobotClient("Norby"));
-                        maze.addClient(new RobotClient("Robbie"));
-                        maze.addClient(new RobotClient("Clango"));
-                        maze.addClient(new RobotClient("Marvin"));
+                String hostname = JOptionPane.showInputDialog("Enter hostname");
+                if((hostname == null) || (hostname.length() == 0)) {
+                  Mazewar.quit();
                 }
 
+                String port = JOptionPane.showInputDialog("Enter port number");
+                if((port == null) || (port.length() == 0)) {
+                  Mazewar.quit();
+                }
+
+                int portNum = Integer.MIN_VALUE;
+                try {
+                	portNum = Integer.parseInt(port);
+                } catch (NumberFormatException e) {
+                	e.printStackTrace();
+                }
                 
+                if (portNum < 0) {
+                	System.out.println("Error: negative port number");
+                } else {
+                	System.out.println("Port = " + portNum);
+                }
+                
+                final ConnectServer connection = new ConnectServer(portNum, hostname);
+
+                // Create the GUIClient and connect it to the KeyListener queue
+                guiClient = new GUIClient(name);
+                // maze.addClient(guiClient);
+                // this.addKeyListener(guiClient);
+
+                new Thread(new ClientActionOperator(maze, this, guiClient)).start();
+                new Thread(new ClientSenderThread(connection, guiClient)).start();
+                new Thread(new ClientReceiverThread(connection, guiClient)).start();
+
+                // Use braces to force constructors not to be called at the beginning of the
+                // constructor.
+                // {
+                //         maze.addClient(new RobotClient("Norby"));
+                //         maze.addClient(new RobotClient("Robbie"));
+                //         maze.addClient(new RobotClient("Clango"));
+                //         maze.addClient(new RobotClient("Marvin"));
+                // }
+
+                guiClient.setupPlayer();
+
+                new Thread () {
+                    public void run() {
+                        String message = "";
+                        while (!guiClient.init_check.get()
+                                    && !message.equals("start")) {
+                            message = JOptionPane.showInputDialog("Enter \"start\"");
+                        }
+                        guiClient.playerReady();
+                        System.out.println("Game starting ...");
+                    }
+                }.start();
+                
+                while (!guiClient.start_check.get()) {
+                }
+
                 // Create the panel that will display the maze.
                 overheadPanel = new OverheadMazePanel(maze, guiClient);
                 assert(overheadPanel != null);

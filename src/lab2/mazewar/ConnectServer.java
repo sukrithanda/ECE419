@@ -1,4 +1,5 @@
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -44,10 +45,15 @@ public class ConnectServer {
     /* Constructor */
     public ConnectServer (int port, String hostname) {
      	try {
-	     	socket = new Socket(hostname, port);
-	     	input = new ObjectInputStream(socket.getInputStream());
-	     	output = new ObjectOutputStream(socket.getOutputStream());
-            output.flush();
+	     	this.socket = new Socket(hostname, port);
+	     	System.out.println("Before input");
+	     	this.input = new ObjectInputStream(socket.getInputStream());
+	     	System.out.println("Before output");
+	     	this.output = new ObjectOutputStream(socket.getOutputStream());
+            this.output.flush();
+            System.out.println("After output");
+     	} catch (UnknownHostException e) {
+     		e.printStackTrace();
      	} catch (IOException e) {
      		e.printStackTrace();
      	} 

@@ -29,34 +29,32 @@ public class MainServer{
         		System.exit(-1);
         	}
         } catch (IOException e) {
-            System.err.println("ERROR: Could not listen on port!");
+            System.out.println("ERROR: Could not listen on port!");
             System.exit(-1);
-
-	       //MainServerThread tickThread = new MainServerThread(server, 20);
-	       // tickThread.start();
+        }
+	       ServerBroadcastThread tickThread = new ServerBroadcastThread(server);
+	       tickThread.start();
 	
 	       // MazewarServerProcessThread processThread = new MazewarServerProcessThread(server);
 	       // processThread.start();
 	
-	
-	        while(true){
-	            //Listen for incoming connections, and create new sockets.
-	            System.out.println("Waiting for new connection...");
-	            Socket incoming = serverSocket.accept();
-	            System.out.println("New client accepted.");
-	
-	         //   if(server.gameState != server.STATE_SETUP){
-	                // Reject client, since game is in progress.
-	           // }else{
-	                ClientTracker createPlayer = new ClientTracker(incoming);
-	                server.clients.add(createPlayer);
-	
-	                System.out.println("Spawning new thread.");
-	
-	                ServerThread clientHandler = new ServerThread(server, createPlayer);
-	                clientHandler.start();
-	          //  }
-	        }
-	    }
+        while(true){
+            //Listen for incoming connections, and create new sockets.
+            System.out.println("Waiting for new connection...");
+            Socket incoming = serverSocket.accept();
+            System.out.println("New client accepted.");
+
+         //   if(server.gameState != server.STATE_SETUP){
+                // Reject client, since game is in progress.
+           // }else{
+                ClientTracker createPlayer = new ClientTracker(incoming);
+                server.clients.add(createPlayer);
+
+                System.out.println("Spawning new thread.");
+
+                ServerThread clientHandler = new ServerThread(server, createPlayer);
+                clientHandler.start();
+          //  }
+        }
     }
 }

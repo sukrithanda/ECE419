@@ -27,31 +27,51 @@ class ClientTracker {
         this.id = numberofClients;
         numberofClients++;
        
-        boolean exists = true;
+     //   boolean exists = true;
 
-        while (exists){
+//        while (exists){
+//            for(int i = 0; i < startingPoints.size(); i++){
+//                if (startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY) {
+//                    exists = true;
+//                    startingY +=5;
+//                    startingX +=2;
+//                }
+//                else{
+//                    exists = false;
+//                }
+//            }
+//
+//        }
+        Random rand = new Random();
+        boolean found = false;
+        while(!found){
+            boolean exists = false;
+            int y = rand.nextInt(10);
+            int x = rand.nextInt(20);
+
             for(int i = 0; i < startingPoints.size(); i++){
-                if (startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY) {
+                if(startingPoints.get(i).getX() == x && startingPoints.get(i).getY() == y){
                     exists = true;
-                    startingY +=5;
-                    startingX +=2;
-                }
-                else{
-                    exists = false;
                 }
             }
-
+            if(!exists){
+                this.startingPoint = new Point(x, y);
+                startingPoints.add(this.startingPoint);
+                found = true;
+            }
         }
 
-        this.startingPoint = new Point(startingX, startingY);
-        startingPoints.add(this.startingPoint);
-        startingY +=5;
-        startingX +=2;
+        System.out.println("Exit loop line 32");
+        
+       // this.startingPoint = new Point(startingX, startingY);
+       // startingPoints.add(this.startingPoint);
+        //startingY +=5;
+       // startingX +=2;
 
         startingDirection = Direction.random();
 
         this.outStream = new ObjectOutputStream(this.socket.getOutputStream());
-       // this.outStream.flush();
+        this.outStream.flush();
         this.inStream = new ObjectInputStream(this.socket.getInputStream());
     }
 

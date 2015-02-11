@@ -193,18 +193,33 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 return getCellImpl(point);
         }
         
-        public synchronized void addClient(Client client) {
-                assert(client != null);
-                // Pick a random starting point, and check to see if it is already occupied
-                Point point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                CellImpl cell = getCellImpl(point);
-                // Repeat until we find an empty cell
-                while(cell.getContents() != null) {
-                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                        cell = getCellImpl(point);
-                } 
-                addClient(client, point);
-        }
+        public synchronized void addClient(Client client, DirectedPoint directedPoint) {
+            assert(client != null);
+            assert(checkBounds(directedPoint));
+            CellImpl cell = getCellImpl(directedPoint);
+            clientMap.put(client, directedPoint);
+            cell.setContents(client);
+            client.addClientListener(this);
+            client.registerMaze(this);
+            while(cell.isWall(client.getOrientation())) {
+            	client.turnLeft();
+            } 
+            update();
+            notifyClientAdd(client);
+    }
+        
+//        public synchronized void addClient(Client client) {
+//                assert(client != null);
+//                // Pick a random starting point, and check to see if it is already occupied
+//                Point point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+//                CellImpl cell = getCellImpl(point);
+//                // Repeat until we find an empty cell
+//                while(cell.getContents() != null) {
+//                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+//                        cell = getCellImpl(point);
+//                } 
+//                addClient(client, point);
+//        }
         
         public synchronized Point getClientPoint(Client client) {
                 assert(client != null);
@@ -420,21 +435,21 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
          * @param client The {@link Client} to be added.
          * @param point The location the {@link Client} should be added.
          */
-        private synchronized void addClient(Client client, Point point) {
-                assert(client != null);
-                assert(checkBounds(point));
-                CellImpl cell = getCellImpl(point);
-                Direction d = Direction.random();
-                while(cell.isWall(d)) {
-                  d = Direction.random();
-                }
-                cell.setContents(client);
-                clientMap.put(client, new DirectedPoint(point, d));
-                client.registerMaze(this);
-                client.addClientListener(this);
-                update();
-                notifyClientAdd(client);
-        }
+//        private synchronized void addClient(Client client, Point point) {
+//                assert(client != null);
+//                assert(checkBounds(point));
+//                CellImpl cell = getCellImpl(point);
+//                Direction d = Direction.random();
+//                while(cell.isWall(d)) {
+//                  d = Direction.random();
+//                }
+//                cell.setContents(client);
+//                clientMap.put(client, new DirectedPoint(point, d));
+//                client.registerMaze(this);
+//                client.addClientListener(this);
+//                update();
+//                notifyClientAdd(client);
+//        }
         
         /**
          * Internal helper for handling the death of a {@link Client}.
@@ -451,21 +466,22 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Point point = (Point)o;
                 CellImpl cell = getCellImpl(point);
                 cell.setContents(null);
-                // Pick a random starting point, and check to see if it is already occupied
-                point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                cell = getCellImpl(point);
-                // Repeat until we find an empty cell
-                while(cell.getContents() != null) {
-                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
-                        cell = getCellImpl(point);
+                if (target instanceof GUIClient) {
+	                // Pick a random starting point, and check to see if it is already occupied
+	                point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+	                cell = getCellImpl(point);
+	                // Repeat until we find an empty cell
+	                while(cell.getContents() != null) {
+	                        point = new Point(randomGen.nextInt(maxX),randomGen.nextInt(maxY));
+	                        cell = getCellImpl(point);
+	                }
+	                Direction d = Direction.random();
+	                while(cell.isWall(d)) {
+	                        d = Direction.random();
+	                }
+	                ((GUIClient) target).playerKilled(d, point);
+	                System.out.println("Player with id = " + target.id + " is Killed");
                 }
-                Direction d = Direction.random();
-                while(cell.isWall(d)) {
-                        d = Direction.random();
-                }
-                cell.setContents(target);
-                clientMap.put(target, new DirectedPoint(point, d));
-                update();
                 notifyClientKilled(source, target);
         }
         
@@ -862,4 +878,14 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 assert(o2 instanceof CellImpl);
                 return (CellImpl)o2;
         }
+
+		@Override
+		public synchronized void regenClient(Client client, Direction direction,
+				Point position) {
+			// TODO Auto-generated method stub
+            CellImpl cell = getCellImpl(position);
+            clientMap.put(client, new DirectedPoint(position, direction));
+            cell.setContents(client);
+            update();
+		}
 }

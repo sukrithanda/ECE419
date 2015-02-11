@@ -157,10 +157,12 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
                 for(int i = 0; i < p.getY(); i++) {
                         for(int j = 0; j < p.getX(); j++) {
                                 boolean cellVisible = true;
-                                Line2D visLine = new Line2D.Double(llx + (cp.getX() + 0.5)*cellwidth,
-                                                                  lly + (cp.getY() + 0.5)*cellheight,
-                                                                  llx + (j + 0.5)*cellwidth,
-                                                                  lly + (i + 0.5)*cellheight);
+                                if (null != cp) {
+	                                Line2D visLine = new Line2D.Double(llx + (cp.getX() + 0.5)*cellwidth,
+	                                                                  lly + (cp.getY() + 0.5)*cellheight,
+	                                                                  llx + (j + 0.5)*cellwidth,
+	                                                                  lly + (i + 0.5)*cellheight);
+                                }
 
                                 /* Visibility testing */
                                 /* Iterator visIt = wallList.iterator();
@@ -196,11 +198,11 @@ public class OverheadMazePanel extends JPanel implements MazeListener {
                                                         Direction orient = c.getOrientation();
                                                         g2.translate(xoffset, yoffset);
                                                         double rotation = 0.0; 
-                                                        if(orient == Direction.South) {
+                                                        if(orient.equals(Direction.South)) {
                                                                 rotation=-java.lang.Math.PI/2.0;
-                                                        } else if (orient == Direction.North) {
+                                                        } else if (orient.equals(Direction.North)) {
                                                                 rotation=java.lang.Math.PI/2.0;
-                                                        } else if (orient == Direction.West) {
+                                                        } else if (orient.equals(Direction.West)) {
                                                                 rotation=java.lang.Math.PI;
                                                         }
                                                         g2.rotate(rotation);

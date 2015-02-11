@@ -5,7 +5,7 @@ public class ClientReceiverThread implements Runnable {
 	final private GUIClient client;
 
     public void run() {
-        for (;;) {
+       for(;;) {
             DataPacket data = (DataPacket) connection.receiveData();
             client.input.add(data);
             System.out.println("CLIENT_RECEIVER_THREAD: " + data);

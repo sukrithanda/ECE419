@@ -17,6 +17,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 USA.
 */
   
+import java.io.Serializable;
 import java.util.Random;
 
 /**
@@ -25,7 +26,7 @@ import java.util.Random;
  * @version $Id: Direction.java 339 2004-01-23 20:06:22Z geoffw $
  */
 
-public class Direction {
+public class Direction implements Serializable {
         
         /* Internals ******************************************************/
         
