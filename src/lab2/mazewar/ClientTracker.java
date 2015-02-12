@@ -5,14 +5,14 @@ import java.util.Vector;
 
 class ClientTracker {
     //Static variables since we want to keep track of all clients and their starting points!
-    public static byte numberofClients = 0;
+    public static byte numberofClients;
     public static Vector<Point> startingPoints = new Vector<Point>();
     public static int startingX = 0;
     public static int startingY= 0;
 
     public Socket socket;
-    public ObjectOutputStream outStream = null;
-    public ObjectInputStream inStream = null;
+    public ObjectOutputStream outputStream = null;
+    public ObjectInputStream inputStream = null;
 
     public Point startingPoint = null;
     public Direction startingDirection = null;
@@ -20,63 +20,46 @@ class ClientTracker {
     public byte id;
     public String name = "";
     public boolean isReady = false;
+    public Random number_gen = new Random();
 
     ClientTracker(Socket socket) throws IOException{
 
         this.socket = socket;
         this.id = numberofClients;
         numberofClients++;
-       
-     //   boolean exists = true;
-
-//        while (exists){
-//            for(int i = 0; i < startingPoints.size(); i++){
-//                if (startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY) {
-//                    exists = true;
-//                    startingY +=5;
-//                    startingX +=2;
-//                }
-//                else{
-//                    exists = false;
-//                }
-//            }
-//
-//        }
-        Random rand = new Random();
-        boolean found = false;
-        while(!found){
-            boolean exists = false;
-            int y = rand.nextInt(10);
-            int x = rand.nextInt(20);
-
-            for(int i = 0; i < startingPoints.size(); i++){
-                if(startingPoints.get(i).getX() == x && startingPoints.get(i).getY() == y){
-                    exists = true;
-                }
-            }
-            if(!exists){
-                this.startingPoint = new Point(x, y);
-                startingPoints.add(this.startingPoint);
-                found = true;
-            }
-        }
-
-        System.out.println("Exit loop line 32");
-        
-       // this.startingPoint = new Point(startingX, startingY);
-       // startingPoints.add(this.startingPoint);
-        //startingY +=5;
-       // startingX +=2;
+               this.setstartingpoint();
 
         startingDirection = Direction.random();
 
-        this.outStream = new ObjectOutputStream(this.socket.getOutputStream());
-        this.outStream.flush();
-        this.inStream = new ObjectInputStream(this.socket.getInputStream());
+        this.outputStream = new ObjectOutputStream(this.socket.getOutputStream());
+        this.outputStream.flush();
+        this.inputStream = new ObjectInputStream(this.socket.getInputStream());
     }
 
-    void sendObject(Object obj) throws IOException {
-        this.outStream.writeObject(obj);
+   // void sendObject(Object obj) throws IOException {
+     //   this.outputStream.writeObject(obj);
+  //  }
+    
+    void setstartingpoint() throws IOException {
+        while(true){
+            // generate random x, y starting points
+            startingY = number_gen.nextInt(10);
+            startingX = number_gen.nextInt(20);
+            //check if they already exists
+            boolean used = false;
+            for(int i = 0; i < startingPoints.size(); i++){
+                if(startingPoints.get(i).getX() == startingX && startingPoints.get(i).getY() == startingY){
+                    used = true;
+                    break;
+                }
+            }
+            if(used == false){
+                this.startingPoint = new Point(startingX, startingY);
+                startingPoints.add(this.startingPoint);
+                return;
+            }
+        }
+
     }
     	
 }

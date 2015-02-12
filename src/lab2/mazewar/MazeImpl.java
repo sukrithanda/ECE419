@@ -305,9 +305,6 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
-                if (dp == null) {
-                	return moveClient(client, new Direction(0));
-                }
                 return moveClient(client, dp.getDirection());
         }
         

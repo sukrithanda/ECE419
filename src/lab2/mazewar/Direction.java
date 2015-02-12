@@ -51,7 +51,7 @@ public class Direction implements Serializable {
         /** 
          * Create a new direction from an internal representation
          */
-        private Direction(int direction) {
+        public Direction(int direction) {
                 assert((direction >= 0) && (direction < 4));
                 this.direction = direction;
         }

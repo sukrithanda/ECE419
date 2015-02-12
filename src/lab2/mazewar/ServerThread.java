@@ -7,6 +7,7 @@ import java.util.concurrent.*;
 class ServerThread extends Thread {
     private ClientTracker client = null;
     private MainServer server = null;
+    
 
     public ServerThread(MainServer server, ClientTracker client) {
         this.server = server;
@@ -17,74 +18,68 @@ class ServerThread extends Thread {
         while (true){
             // Load the incoming_packet from a client.
             try {
-                DataPacket incoming_packet = (DataPacket)this.client.inStream.readObject();
+                DataPacket incoming_packet = (DataPacket)this.client.inputStream.readObject();
                
                 DataPacket outgoing_packet = new DataPacket();
 
-                switch (incoming_packet.type){
-                case DataPacket.GET_ID:
+                if (incoming_packet.type == DataPacket.GET_ID){
                     if(server.currentState == 0){
+                    	//set the starting point and the id
                         outgoing_packet.id = this.client.id;
                         outgoing_packet.type = DataPacket.SET_ID;
                         outgoing_packet.direction = this.client.startingDirection;
                         outgoing_packet.point = this.client.startingPoint;
-                        // Set a random location.
-                        System.out.println("##"+outgoing_packet.id+": Returning client incoming_packet");
-                        this.client.sendObject(outgoing_packet);
-
+                        
+                        this.client.outputStream.writeObject(outgoing_packet);
                         // Send all existing data to the client.
-                        System.out.println("Catching up client. Syncing "+server.action_history.size()+" previous actions.");
                         for(int i = 0; i < server.action_history.size(); i++){
-                            this.client.sendObject(server.action_history.get(i));
+                            this.client.outputStream.writeObject(server.action_history.get(i));
                         }
                     }
-                    break;
-                case DataPacket.SET_ID:
-                    System.out.println("##"+incoming_packet.id+": Error - received a SET incoming_packet from this client.");
-                    break;
-                case DataPacket.PLAYER_READY:
+                }
+                if (incoming_packet.type == DataPacket.PLAYER_READY){
                     if(server.currentState == 0){
                         this.client.isReady = true;
-                        System.out.println("##"+incoming_packet.id+": Setting client as ready");
-
-                        // Check if all clients are set as ready
-                        boolean all_ready = true;
-                        Enumeration enum_clients = server.clients.elements();
-                        while (enum_clients.hasMoreElements()){
-                            ClientTracker client = (ClientTracker)enum_clients.nextElement();
-                            if(client.isReady == false){
-                                all_ready = false;
-                            }
+                        System.out.println("client is now ready");
+                        
+                        boolean clients_ready = true;
+                        Iterator i = server.clients.iterator();
+                        while (i.hasNext()) {
+                            ClientTracker client = (ClientTracker)i.next();
+                        	 if(client.isReady == false){
+                        		 clients_ready = false;
+                                 break;
+                             }
                         }
 
-                        // If so, notify everyone that the game is beginning
-                        if(all_ready){
-                            server.currentState = server.STATE_PLAYING;
+                        if(clients_ready){
+                            System.out.println("##"+incoming_packet.id+": ALL CLIENTS READY. START GAME");
+                            server.currentState = 1;
                             incoming_packet = new DataPacket();
                             incoming_packet.id = -1;
                             incoming_packet.type = DataPacket.START_GAME;
                             addIncr(incoming_packet);
                         }
                     }
-                    break;
-                case DataPacket.ADD_PLAYER:
+                }
+      
+                if (incoming_packet.type == DataPacket.ADD_PLAYER){
+
                     if(server.currentState == 0){
-                        // Pick a random starting point, and check to see if it is already occupied
                         outgoing_packet.id = this.client.id;
+                        //retreive new starting point and direction when client was created
                         outgoing_packet.direction = this.client.startingDirection;
                         outgoing_packet.point = this.client.startingPoint;
                         outgoing_packet.type = DataPacket.ADD_PLAYER;
                         outgoing_packet.name = incoming_packet.name;
 
                         this.client.name = incoming_packet.name;
-
-                        // Set a random location.
-                        System.out.println("##"+incoming_packet.id+": To the buffer. Adding new client to maze for all players.");
                         addIncr(outgoing_packet);
                     }
-                    break;
-                case DataPacket.PLAYER_KILLED:
-                    if(server.currentState == server.STATE_PLAYING){
+                }
+                if (incoming_packet.type == DataPacket.PLAYER_KILLED){
+               // case DataPacket.PLAYER_KILLED:
+                    if(server.currentState == 1){
                         // Pick a random starting point, and check to see if it is already occupied
                         outgoing_packet.id = incoming_packet.id;
                         outgoing_packet.direction = incoming_packet.direction;
@@ -97,18 +92,18 @@ class ServerThread extends Thread {
                         addIncr(outgoing_packet);
                         
                     }
-                    break;
-                default:
-                    if(server.currentState == server.STATE_PLAYING){
+                }
+                else { 
+                    if(server.currentState == 1){
                         System.out.println("##"+incoming_packet.id+": To the buffer.");
                         outgoing_packet.id = incoming_packet.id;
                         outgoing_packet.type = incoming_packet.type;
                         addIncr(outgoing_packet);
                     }
+                }
             }
 
-            } catch (IOException e) {
-                // TODO: Add disconnect logic here.
+             catch (IOException e) {
                 e.printStackTrace();
 
                 DataPacket disconnect = new DataPacket();
@@ -118,14 +113,10 @@ class ServerThread extends Thread {
                 addIncr(disconnect);
                 this.server.clients.remove(this.client);
 
-                System.out.println("##################################################");
                 System.out.println("Client "+this.client.id+" has disconnected.");
-                System.out.println("Clients remaining: "+this.server.clients.size());
-                System.out.println("##################################################");
-
                 try {
-                    this.client.inStream.close();
-                    this.client.outStream.close();
+                    this.client.inputStream.close();
+                    this.client.outputStream.close();
                     this.client.socket.close();
                 } catch (IOException e1) {
                     e1.printStackTrace();

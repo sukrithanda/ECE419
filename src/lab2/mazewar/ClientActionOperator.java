@@ -40,24 +40,30 @@ public class ClientActionOperator implements Runnable {
 	            /* Case statements to perform operations based upon data packets received from the server */
 	            switch (packet.type){
 	            case DataPacket.START_GAME:
-	                assert(packet.id == client.id);
+	            	System.out.println("START_GAME");
 	                client.start_check.compareAndSet(false, true);
 	                break;
 	            case DataPacket.LEFT:
+	            	System.out.println("LEFT");
 	                player.turnLeft();
 	                break;
 	            case DataPacket.RIGHT:
+	            	System.out.println("RIGHT");
 	                player.turnRight();
 	                break;
 	            case DataPacket.FORWARD:
+	            	System.out.println("FORWARD");
 	                player.forward();
 	                break;
 	            case DataPacket.BACKWARD:
+	            	System.out.println("BACKWARD");
 	                player.backup();
 	                break;
 	            case DataPacket.ERROR:
+	            	System.out.println("ERROR");
 	                break;
 	            case DataPacket.ADD_PLAYER:
+	            	System.out.println("ADD_PLAYER");
 	                DirectedPoint position = new DirectedPoint(packet.point, packet.direction);
 	                System.out.println("DEBUG - ADDING NEW PLAYER @ " + position + "; id: " + packet.id);
 	
@@ -76,12 +82,15 @@ public class ClientActionOperator implements Runnable {
 	                } 
 	                break;
 	            case DataPacket.PLAYER_RESPAWN:
+	            	System.out.println("PLAYER_RESPAWN");
 	                Client regen = (Client) client.id_client.get(packet.id);
 	                assert(regen != null);
 	                maze.regenClient(regen, packet.direction, packet.point);
 	            case DataPacket.REMOVE_PLAYER:
+	            	System.out.println("REMOVE_PLAYER");
 	                break;
 	            case DataPacket.FIRE:
+	            	System.out.println("FIRE");
 	                player.fire();
 	                break;
 	            default:
