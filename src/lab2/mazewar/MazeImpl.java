@@ -233,6 +233,9 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
+                if (dp == null) {
+                	return new Direction(0);
+                }
                 return dp.getDirection();
         }
        
@@ -302,6 +305,9 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
+                if (dp == null) {
+                	return moveClient(client, new Direction(0));
+                }
                 return moveClient(client, dp.getDirection());
         }
         
@@ -310,9 +316,11 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 Object o = clientMap.get(client);
                 assert(o instanceof DirectedPoint);
                 DirectedPoint dp = (DirectedPoint)o;
+                if (dp == null) {
+                	return moveClient(client, new Direction(0).invert());
+                }
                 return moveClient(client, dp.getDirection().invert());
         }
-        
        
         public synchronized Iterator getClients() {
                 return clientMap.keySet().iterator();

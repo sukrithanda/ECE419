@@ -130,7 +130,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         }
         
         public boolean playerKilled (Direction direction, Point point) {
-            output.offer(DataPacketConstructor(getName(), DataPacket.PLAYER_READY, id, direction, point));
+            output.offer(DataPacketConstructor(getName(), DataPacket.PLAYER_KILLED, id, direction, point));
             return true;
         }
         
