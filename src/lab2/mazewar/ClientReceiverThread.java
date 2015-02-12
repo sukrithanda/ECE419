@@ -4,6 +4,8 @@ public class ClientReceiverThread implements Runnable {
 	private ConnectServer connection = null;
 	final private GUIClient client;
 
+	/* This thread receives data packets from the server, and adds
+	 * them into the input queue */
     public void run() {
        for(;;) {
             DataPacket data = (DataPacket) connection.receiveData();

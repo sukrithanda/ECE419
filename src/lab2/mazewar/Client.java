@@ -117,7 +117,7 @@ public abstract class Client {
         /**
          * ID of the client
          */
-        public int id = Integer.MIN_VALUE;
+        public byte id = Byte.MIN_VALUE;
         
         /** 
          * Create a new client with the specified name.

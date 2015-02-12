@@ -5,7 +5,7 @@ import java.util.Vector;
 
 class ClientTracker {
     //Static variables since we want to keep track of all clients and their starting points!
-    public static int numberofClients = 0;
+    public static byte numberofClients = 0;
     public static Vector<Point> startingPoints = new Vector<Point>();
     public static int startingX = 0;
     public static int startingY= 0;
@@ -17,7 +17,7 @@ class ClientTracker {
     public Point startingPoint = null;
     public Direction startingDirection = null;
 
-    public int id;
+    public byte id;
     public String name = "";
     public boolean isReady = false;
 

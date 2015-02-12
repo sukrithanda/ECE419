@@ -206,7 +206,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             } 
             update();
             notifyClientAdd(client);
-    }
+        }
         
 //        public synchronized void addClient(Client client) {
 //                assert(client != null);

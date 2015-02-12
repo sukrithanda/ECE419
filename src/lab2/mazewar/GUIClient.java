@@ -115,39 +115,47 @@ public class GUIClient extends LocalClient implements KeyListener {
         }
 
         public boolean setupPlayer () {
-            DataPacket data = new DataPacket();
-            data.name = getName();
-            data.type = data.GET_ID;
-            output.offer(data);
+            output.offer(DataPacketConstructor(getName(), DataPacket.GET_ID));
             return true;
         }
 
         public boolean addPlayer () {
-            DataPacket data = new DataPacket();
-            data.type = DataPacket.ADD_PLAYER;
-            data.name = getName();
-            data.id = id;
-            output.offer(data);
+            output.offer(DataPacketConstructor(getName(), DataPacket.ADD_PLAYER, id));
             return true;
         }
 
         public boolean playerReady () {
-            DataPacket data = new DataPacket();
-            data.name = getName();
-            data.id = id;
-            data.type = DataPacket.PLAYER_READY; 
-            output.offer(data);
+            output.offer(DataPacketConstructor(getName(), DataPacket.PLAYER_READY, id));
             return true;
         }
         
         public boolean playerKilled (Direction direction, Point point) {
-            DataPacket data = new DataPacket();
-            data.point = point;
-            data.direction = direction;
-            data.type = DataPacket.PLAYER_KILLED;
-            data.name = getName();
-            data.id = id;
-            output.offer(data);
+            output.offer(DataPacketConstructor(getName(), DataPacket.PLAYER_READY, id, direction, point));
             return true;
+        }
+        
+        private static DataPacket DataPacketConstructor (String name, byte type) {
+        	DataPacket data = new DataPacket();
+            data.name = name;
+            data.type = type;
+            return data;
+        }
+        
+        private static DataPacket DataPacketConstructor (String name, byte type, byte id) {
+	        DataPacket data = new DataPacket();
+	        data.type = type;
+	        data.name = name;
+	        data.id = id;
+	        return data;
+        }
+        
+        private static DataPacket DataPacketConstructor (String name, byte type, byte id, Direction direction, Point point) {
+	        DataPacket data = new DataPacket();
+	        data.type = type;
+	        data.name = name;
+	        data.id = id;
+	        data.point = point;
+	        data.direction = direction;
+	        return data;
         }
 }

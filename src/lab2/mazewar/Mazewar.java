@@ -63,7 +63,14 @@ public class Mazewar extends JFrame {
          * The {@link GUIClient} for the game.
          */
         private GUIClient guiClient = null;
-
+        
+        /**
+         * Important variables to connect to the server
+         */
+        public String name = null;
+        public String hostname = null;
+        public String port = null;
+        	
         /**
          * The panel that displays the {@link Maze}.
          */
@@ -133,24 +140,10 @@ public class Mazewar extends JFrame {
                 assert(scoreModel != null);
                 maze.addMazeListener(scoreModel);
                 
-                // Throw up a dialog to get the GUIClient name.
-                String name = JOptionPane.showInputDialog("Enter your name");
-                if((name == null) || (name.length() == 0)) {
-                  Mazewar.quit();
-                }
-                
-                // You may want to put your network initialization code somewhere in
-                // here.
-                String hostname = JOptionPane.showInputDialog("Enter hostname");
-                if((hostname == null) || (hostname.length() == 0)) {
-                  Mazewar.quit();
-                }
+                /* Shows dialog boxes to get user and server data */
+                getUserInputs();
 
-                String port = JOptionPane.showInputDialog("Enter port number");
-                if((port == null) || (port.length() == 0)) {
-                  Mazewar.quit();
-                }
-
+                /* Convert port number from string into integer */
                 int portNum = Integer.MIN_VALUE;
                 try {
                 	portNum = Integer.parseInt(port);
@@ -158,12 +151,14 @@ public class Mazewar extends JFrame {
                 	e.printStackTrace();
                 }
                 
+                /* Check whether the port number is a valid input */
                 if (portNum < 0) {
                 	System.out.println("Error: negative port number");
                 } else {
                 	System.out.println("Port = " + portNum);
                 }
                 
+                /* Establish connection with the server */
                 final ConnectServer connection = new ConnectServer(portNum, hostname);
 
                 // Create the GUIClient and connect it to the KeyListener queue
@@ -171,10 +166,9 @@ public class Mazewar extends JFrame {
                 // maze.addClient(guiClient);
                 // this.addKeyListener(guiClient);
 
-                new Thread(new ClientActionOperator(maze, this, guiClient)).start();
-                new Thread(new ClientSenderThread(connection, guiClient)).start();
-                new Thread(new ClientReceiverThread(connection, guiClient)).start();
-
+                /* This function starts the background threads to receive and send messages */
+                initBackgroundThreads(connection);
+                
                 // Use braces to force constructors not to be called at the beginning of the
                 // constructor.
                 // {
@@ -184,22 +178,8 @@ public class Mazewar extends JFrame {
                 //         maze.addClient(new RobotClient("Marvin"));
                 // }
 
-                guiClient.setupPlayer();
-
-                new Thread () {
-                    public void run() {
-                        String message = "";
-                        while (!guiClient.init_check.get()
-                                    && !message.equals("start")) {
-                            message = JOptionPane.showInputDialog("Enter \"start\"");
-                        }
-                        guiClient.playerReady();
-                        System.out.println("Game starting ...");
-                    }
-                }.start();
-                
-                while (!guiClient.start_check.get()) {
-                }
+                /* Setup the user environment and let the players start the game */
+                setEnvToStartGame();
 
                 // Create the panel that will display the maze.
                 overheadPanel = new OverheadMazePanel(maze, guiClient);
@@ -261,7 +241,53 @@ public class Mazewar extends JFrame {
         }
 
         
-        /**
+        private void setEnvToStartGame() {
+			// TODO Auto-generated method stub
+            guiClient.setupPlayer();
+
+            new Thread () {
+                public void run() {
+                    String message = "";
+                    while (!guiClient.init_check.get()
+                                && !message.equals("start")) {
+                        message = JOptionPane.showInputDialog("Enter \"start\"");
+                    }
+                    guiClient.playerReady();
+                    System.out.println("Game starting ...");
+                }
+            }.start();
+            
+            while (!guiClient.start_check.get()) {
+            }
+		}
+
+		private void initBackgroundThreads(ConnectServer connection) {
+			// TODO Auto-generated method stub
+            new Thread(new ClientActionOperator(maze, this, guiClient)).start();
+            new Thread(new ClientSenderThread(connection, guiClient)).start();
+            new Thread(new ClientReceiverThread(connection, guiClient)).start();
+		}
+
+		private void getUserInputs() {
+			// TODO Auto-generated method stub
+            // Throw up a dialog to get the GUIClient name.
+            name = JOptionPane.showInputDialog("Enter your name");
+            if((name == null) || (name.length() == 0)) {
+              Mazewar.quit();
+            }
+            
+            hostname = JOptionPane.showInputDialog("Enter hostname");
+            if((hostname == null) || (hostname.length() == 0)) {
+              Mazewar.quit();
+            }
+
+            port = JOptionPane.showInputDialog("Enter port number");
+            if((port == null) || (port.length() == 0)) {
+              Mazewar.quit();
+            }
+		}
+
+		/**
          * Entry point for the game.  
          * @param args Command-line arguments.
          */

@@ -3,7 +3,8 @@ public class ClientSenderThread implements Runnable {
 
 	private ConnectServer connection = null;
 	final private GUIClient client;
-
+	
+	/* This thread sends data packets in the output queue to the server */
     public void run() {
         for (;;) {
             if (client.output.peek() != null) {
