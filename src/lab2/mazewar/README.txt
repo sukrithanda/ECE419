@@ -23,8 +23,7 @@ Sukrit Handa (998460810)
 	c) Dialog elements were added to the GUI interface in order to
            obtain server name and port number from the client in addition
            to his/her name. Furthermore, all players have to send acknowlegement
-           by pressing "start" to inform that they had joined the game.
-
+           by pressing "start" to inform that they have joined the game.
 
 5. For communication between server-side and client-side, we
    created a class named DataPacket. DataPacket class is used
