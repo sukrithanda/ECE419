@@ -1,0 +1,27 @@
+Files lab3/bin/Makefile and ref5/bin/Makefile differ
+Files lab3/bin/Makefile.dep and ref5/bin/Makefile.dep differ
+Files lab3/src/ClientEvent.java and ref5/src/ClientEvent.java differ
+Files lab3/src/Client.java and ref5/src/Client.java differ
+Files lab3/src/Direction.java and ref5/src/Direction.java differ
+Files lab3/src/GUIClient.java and ref5/src/GUIClient.java differ
+Files lab3/src/Makefile and ref5/src/Makefile differ
+Files lab3/src/Makefile.dep and ref5/src/Makefile.dep differ
+Files lab3/src/MazeImpl.java and ref5/src/MazeImpl.java differ
+Files lab3/src/Maze.java and ref5/src/Maze.java differ
+Files lab3/src/Mazewar.java and ref5/src/Mazewar.java differ
+Only in ref5/bin: eventSeqServer.sh
+Only in ref5/bin: README.md
+Only in ref5/src: ClientHandler.java
+Only in ref5/src: ClientInformation.java
+Only in ref5/src: ClientPacket.java
+Only in ref5/src: ConnectionDetails.java
+Only in ref5/src: eventSeqServer.sh
+Only in ref5/src: EventSequencerServerHandlerThread.java
+Only in ref5/src: EventSequencerServer.java
+Only in ref5/src: MazewarServerHandlerThread.java
+Only in ref5/src: MazewarServer.java
+Only in ref5/src: README.md
+Only in ref5/src: RemoteClientHandler.java
+Only in ref5/src: RemoteClientHandlerListenerThread.java
+Only in ref5/src: RemoteClientHandlerThread.java
+Only in ref5/src: ServerDataBean.java

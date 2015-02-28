@@ -1,0 +1,34 @@
+Files lab3/bin/run.sh and ref3/bin/run.sh differ
+Files lab3/src/ClientEvent.java and ref3/src/ClientEvent.java differ
+Files lab3/src/Client.java and ref3/src/Client.java differ
+Files lab3/src/Direction.java and ref3/src/Direction.java differ
+Files lab3/src/GUIClient.java and ref3/src/GUIClient.java differ
+Files lab3/src/LocalClient.java and ref3/src/LocalClient.java differ
+Files lab3/src/Makefile and ref3/src/Makefile differ
+Files lab3/src/Makefile.dep and ref3/src/Makefile.dep differ
+Files lab3/src/MazeImpl.java and ref3/src/MazeImpl.java differ
+Files lab3/src/Maze.java and ref3/src/Maze.java differ
+Files lab3/src/Mazewar.java and ref3/src/Mazewar.java differ
+Files lab3/src/RemoteClient.java and ref3/src/RemoteClient.java differ
+Files lab3/src/RobotClient.java and ref3/src/RobotClient.java differ
+Files lab3/src/run.sh and ref3/src/run.sh differ
+Only in ref3/bin: README
+Only in ref3/bin: RunClient.sh
+Only in ref3/bin: server.sh
+Only in ref3/src: ClientDequeThread.java
+Only in ref3/src: CommunicationThread.java
+Only in ref3/src: cscope.files
+Only in ref3/src: cscope.out
+Only in ref3/src: design.pdf
+Only in ref3/src: InstructionPacket.java
+Only in ref3/src: MazewarServerBroadcastThread.java
+Only in ref3/src: MazewarServer.java
+Only in ref3/src: MazewarServerThread.java
+Only in ref3/src: NamingServer.java
+Only in ref3/src: NamingServer.sh
+Only in ref3/src: NamingServerThread.java
+Only in ref3/src: README
+Only in ref3/src: RunClient.sh
+Only in ref3/src: ServerListeningThread.java
+Only in ref3/src: server.sh
+Only in ref3/src: Streams.java

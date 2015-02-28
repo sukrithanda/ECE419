@@ -1,0 +1,19 @@
+Files lab3/bin/Makefile and ref1/bin/Makefile differ
+Files lab3/bin/Makefile.dep and ref1/bin/Makefile.dep differ
+Files lab3/src/Client.java and ref1/src/Client.java differ
+Files lab3/src/Direction.java and ref1/src/Direction.java differ
+Files lab3/src/GUIClient.java and ref1/src/GUIClient.java differ
+Files lab3/src/Makefile and ref1/src/Makefile differ
+Files lab3/src/Makefile.dep and ref1/src/Makefile.dep differ
+Files lab3/src/MazeImpl.java and ref1/src/MazeImpl.java differ
+Files lab3/src/Maze.java and ref1/src/Maze.java differ
+Files lab3/src/Mazewar.java and ref1/src/Mazewar.java differ
+Files lab3/src/OverheadMazePanel.java and ref1/src/OverheadMazePanel.java differ
+Only in ref1/bin: runserver.sh
+Only in ref1/src: ActionPacket.java
+Only in ref1/src: ClientConnectionInfo.java
+Only in ref1/src: ClientEngine.java
+Only in ref1/src: MWConnection.java
+Only in ref1/src: NameServer.java
+Only in ref1/src: NameServerPacket.java
+Only in ref1/src: runserver.sh
