@@ -20,6 +20,7 @@ USA.
 import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
 
+import java.io.Serializable;
 /**
  * An implementation of {@link LocalClient} that is controlled by the keyboard
  * of the computer on which the game is being run.  
@@ -27,7 +28,7 @@ import java.awt.event.KeyEvent;
  * @version $Id: GUIClient.java 343 2004-01-24 03:43:45Z geoffw $
  */
 
-public class GUIClient extends LocalClient implements KeyListener {
+public class GUIClient extends LocalClient implements KeyListener, Serializable{
 
         /**
          * Create a GUI controlled {@link LocalClient}.  
@@ -41,25 +42,7 @@ public class GUIClient extends LocalClient implements KeyListener {
          * @param e The {@link KeyEvent} that occurred.
          */
         public void keyPressed(KeyEvent e) {
-                // If the user pressed Q, invoke the cleanup code and quit. 
-                if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
-                        Mazewar.quit();
-                // Up-arrow moves forward.
-                } else if(e.getKeyCode() == KeyEvent.VK_UP) {
-                        forward();
-                // Down-arrow moves backward.
-                } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
-                        backup();
-                // Left-arrow turns left.
-                } else if(e.getKeyCode() == KeyEvent.VK_LEFT) {
-                        turnLeft();
-                // Right-arrow turns right.
-                } else if(e.getKeyCode() == KeyEvent.VK_RIGHT) {
-                        turnRight();
-                // Spacebar fires.
-                } else if(e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        fire();
-                }
+            chandler.handleKeyPress(e);
         }
         
         /**

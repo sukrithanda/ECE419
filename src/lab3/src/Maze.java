@@ -18,6 +18,7 @@ USA.
 */
   
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
 
 /**
  * An abstract class for representing mazes, and the operations a {@link Client}
@@ -50,6 +51,8 @@ public abstract class Maze {
      */
     public abstract Cell getCell(Point point);
 
+    public int pointSeed;
+
     /* Client functionality ************************************************/
     
     /** 
@@ -57,6 +60,13 @@ public abstract class Maze {
      * @param client {@link Client} to be added to the {@link Maze}.
      */
     public abstract void addClient(Client client);
+
+
+    /** 
+     * Add a remote {@link Client} at given location and direction in the {@link Maze}. 
+     * @param client {@link Client} to be added to the {@link Maze}.
+     */
+    public abstract void addRemoteClient(Client client, Point point, Direction direction);
 
     /** 
      * Create a new {@link Projectile} from the specified {@link Client}
@@ -116,4 +126,10 @@ public abstract class Maze {
      */
     public abstract void removeMazeListener(MazeListener ml);
     
+
+    // Lab 2 additions!
+    // Add client handler
+    public abstract void addClientHandler(ClientHandlerThread ch);
+    public abstract void setClient(Client sc, Client tc, Point p, Direction d);
+    public abstract void addLock(Lock l);
 }
