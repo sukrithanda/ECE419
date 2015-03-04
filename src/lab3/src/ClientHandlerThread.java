@@ -13,9 +13,9 @@ import java.net.*;
 /* Client handler 
  * Each client will be registered with a client handler
 
- Client connects to Lookup
- Client creates a listener thread here for other clients to connect to handle all incoming packet events
- Client creates a dispatcher thread to send out its events
+ Client connects to NameServer
+ Client creates a thread to listen for incoming packets from other clients
+ Client creates a broadcast thread to broadcast client state change
 
  * Listens for actions by GUI client and notifies listener
  * Receives game events queue from listener and executes events 
@@ -23,7 +23,8 @@ import java.net.*;
  */
 
 public class ClientHandlerThread extends Thread {
-    Socket cSocket;
+	
+    Socket s;
     Client me;
     int myId;
     Maze maze;
@@ -34,49 +35,46 @@ public class ClientHandlerThread extends Thread {
     ConcurrentHashMap<Integer, DataPacket> lookupTable;
 
     int seqNum;
-    //MazePacket []eventArray = new MazePacket[21];
     boolean quitting = false;
 
     ListenerData data = new ListenerData();
 
-    Dispatcher dispatcher = new Dispatcher(data, this);    
+    Broadcaster dispatcher = new Broadcaster(data, this);    
 
     DataPacket packetFromLookup = new DataPacket();
     DataPacket packetFromClient;
-    MazewarListener mlistener;
+    //ClientReciever mlistener;
 
     boolean debug = true;
 
     ScoreTableModel scoreModel;
 
-    public ClientHandlerThread(String lookup_host, int lookup_port, int client_port, ScoreTableModel sm){
+    public ClientHandlerThread(String nameserver_host, int nameserver_port, int client_port, ScoreTableModel sm){
         /* Connect to naming service. */
         try {
 
             System.out.println("Connecting to Naming Service...");
 
-            // Connect to lookup
-            cSocket = new Socket(lookup_host,lookup_port);
-            out = new ObjectOutputStream(cSocket.getOutputStream());
-            in = new ObjectInputStream(cSocket.getInputStream());
+            // Connect to NameServer
+            s = new Socket(nameserver_host,nameserver_port);
+            out = new ObjectOutputStream(s.getOutputStream());
+            in = new ObjectInputStream(s.getInputStream());
             clientTable = new ConcurrentHashMap();	 
-	    scoreModel = sm;
-            // Start the dispatcher
-            //		Broadcast this.client's events
-            //dispatcher.start();
-
+            scoreModel = sm;
+       
             // Start client listener
             // 		- for other clients to connect to
             //		- to handle incoming packets
-            MazewarListener mazewarListener = new MazewarListener(client_port,data, dispatcher, this);
-            mlistener = mazewarListener;
-            (new Thread(mazewarListener)).start();
+            ClientReciever mazewarListener = new ClientReciever(client_port,data, dispatcher, this);
+           // mlistener = mazewarListener;
+            
+            Thread x = new Thread(mazewarListener);
+            x.start();
 
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
-        System.out.println("I am leaving. Goodbye");
     }
 
     public void registerMaze(Maze maze) {
@@ -155,8 +153,8 @@ public class ClientHandlerThread extends Thread {
         packetToClients.packet_type = DataPacket.CLIENT_SPAWN;
         packetToClients.for_new_client = false;
         packetToClients.client_id = myId;
-        packetToClients.lookupTable = new ConcurrentHashMap();
-        packetToClients.lookupTable.put(myId,getMe());
+        packetToClients.NameServerTable = new ConcurrentHashMap();
+        packetToClients.NameServerTable.put(myId,getMe());
 
         cd.c = me;
         cd.c.setId(myId);
@@ -176,7 +174,7 @@ public class ClientHandlerThread extends Thread {
     	
         // Get the current lookup table
         lookupTable = new ConcurrentHashMap();
-        lookupTable = packetFromLookup.lookupTable;
+        lookupTable = packetFromLookup.NameServerTable;
 
         myId = packetFromLookup.client_id;
         //data.addSocketOutToList(myId, out);
@@ -428,7 +426,7 @@ public class ClientHandlerThread extends Thread {
 		// Close lookup connection.
                 out.close();
                 in.close();
-                cSocket.close();
+                s.close();
 
 		// Close client connections.
 		// data.quit();
@@ -545,7 +543,7 @@ public class ClientHandlerThread extends Thread {
 
     public void spawnClient(){
         Integer id = packetFromClient.client_id;
-        ConcurrentHashMap<Integer,DataPacket> tuple = packetFromClient.lookupTable;
+        ConcurrentHashMap<Integer,DataPacket> tuple = packetFromClient.NameServerTable;
 
         DataPacket cd = new DataPacket();
         cd = tuple.get(id);

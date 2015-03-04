@@ -1,8 +1,5 @@
-import java.util.concurrent.BlockingQueue;
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
-
-import java.io.*;
-import java.net.*;
 
 /* MazePacket
 
@@ -87,7 +84,7 @@ public class DataPacket implements Serializable {
     // Contains all client information within Client data
     ConcurrentHashMap<String, DataPacket> client_list;
 
-    ConcurrentHashMap<Integer, DataPacket> lookupTable;
+    ConcurrentHashMap<Integer, DataPacket> NameServerTable;
     // Packet data
     int sequence_num;
     int packet_type;

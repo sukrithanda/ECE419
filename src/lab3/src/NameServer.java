@@ -8,8 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
    Stores key associated with all clients
 
    Hastable format
-   key <String> : ID
-   IP <String: IP, port
+   key <String> : value<DataPacket>
  */
 public class NameServer {
     public static void main (String[] args) throws IOException {

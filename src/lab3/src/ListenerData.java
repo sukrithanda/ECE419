@@ -15,16 +15,16 @@ public class ListenerData implements Serializable {
     /**
      * Game state 
      */
-    BlockingQueue<DataPacket> eventQueue = new LinkedBlockingQueue();
-    ConcurrentHashMap<String, DataPacket> clientTable = new ConcurrentHashMap();  // TODO: get rid of this old stuff
-    ConcurrentHashMap<Integer, ObjectOutputStream> socketOutList = new ConcurrentHashMap(); 
-    ConcurrentHashMap<Integer, DataPacket> lookupTable = new ConcurrentHashMap(); // Contains all client data
+    LinkedBlockingQueue<DataPacket> eventQueue = new LinkedBlockingQueue<DataPacket>();
+    ConcurrentHashMap<String, DataPacket> clientTable = new ConcurrentHashMap<String, DataPacket>();  // TODO: get rid of this old stuff
+    ConcurrentHashMap<Integer, ObjectOutputStream> socketOutList = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
+    ConcurrentHashMap<Integer, DataPacket> lookupTable = new ConcurrentHashMap<Integer, DataPacket>(); // Contains all client data
 
     /**
      * Client Data
      */
     int myId;
-    ConcurrentHashMap<String, Point> clientPosition = new ConcurrentHashMap();
+    ConcurrentHashMap<String, Point> clientPosition = new ConcurrentHashMap<String, Point>();
 
     /**
      * Distributed synchronization resources
@@ -34,21 +34,6 @@ public class ListenerData implements Serializable {
     Semaphore sem = new Semaphore(0); 
 
     Lock l = new ReentrantLock();
-
-
-
-    // public MazePacket getNextEvent() {
-    //     // remove next event and return
-    //     MazePacket p = new MazePacket();
-    //     int i = -1;
-    //     while (p == null && i < 20) {
-    //         i++;
-    //         p = eventArray[i];
-    //     }
-    //     eventArray[i] = null;
-    //     return p;
-    // }
-
 
     public void setId(int num){
         myId = num;
@@ -78,7 +63,7 @@ public class ListenerData implements Serializable {
         }
     }
 
-    public void addLookupTable(ConcurrentHashMap lookupTable){
+    public void addLookupTable(ConcurrentHashMap<Integer, DataPacket> lookupTable){
         this.lookupTable = lookupTable;
     }
 

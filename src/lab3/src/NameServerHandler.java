@@ -19,8 +19,6 @@ public class NameServerHandler extends Thread {
     }
 
     public void run() {
-        boolean gotByePacket = false;
-
         try {
             ObjectInputStream server_in = new ObjectInputStream(socket.getInputStream());
             DataPacket packetFromClient;
@@ -96,8 +94,8 @@ public class NameServerHandler extends Thread {
                     packetToClient.client_id = client_id;
                     packetToClient.error_code = 0;
 
-                    packetToClient.lookupTable = new ConcurrentHashMap<Integer, DataPacket>();
-                    packetToClient.lookupTable = table;
+                    packetToClient.NameServerTable = new ConcurrentHashMap<Integer, DataPacket>();
+                    packetToClient.NameServerTable = table;
 
                     server_out.writeObject(packetToClient);
                     continue;
@@ -131,10 +129,8 @@ public class NameServerHandler extends Thread {
             socket.close();
 
         } catch (IOException e) {
-            if(!gotByePacket)
                 e.printStackTrace();
         } catch (ClassNotFoundException e) {
-            if(!gotByePacket)
                 e.printStackTrace();
         }
     }

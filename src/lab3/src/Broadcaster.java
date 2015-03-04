@@ -1,28 +1,26 @@
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.Date;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.Set;
-import java.io.*;
-import java.net.*;
-import java.sql.Timestamp;
-import java.util.Date;
 
 /* Dispatcher class
  * Dispatches messages from event queue and broadcasts
  * events to all remote clients.
  *
  */
-public class Dispatcher extends Thread {
-    BlockingQueue<DataPacket> eventQueue = null;
-    ConcurrentHashMap<String, DataPacket> clientTable = null;
-    ConcurrentHashMap<Integer, ObjectOutputStream> socketOutList = new ConcurrentHashMap(); 
+public class Broadcaster extends Thread {
+    LinkedBlockingQueue<DataPacket> movesQ = null;
+    ConcurrentHashMap<String, DataPacket> clients= null;
+    ConcurrentHashMap<Integer, ObjectOutputStream> outstreams = new ConcurrentHashMap(); 
     int seqNum;
 
-    int lamportClock;
+    int LCLK;
     Semaphore sem;
     ListenerData data;
     ClientHandlerThread chandler;
@@ -31,12 +29,12 @@ public class Dispatcher extends Thread {
 
     boolean debug = true;
 
-    public Dispatcher(ListenerData data, ClientHandlerThread chandler) {
+    public Broadcaster(ListenerData data, ClientHandlerThread chandler) {
         this.data = data;
         this.chandler = chandler;
-        this.eventQueue = data.eventQueue;
-        this.clientTable = data.clientTable;
-        this.socketOutList = data.socketOutList;
+        this.movesQ = data.eventQueue;
+        this.clients = data.clientTable;
+        this.outstreams = data.socketOutList;
         this.sem = data.sem;
     }
 
@@ -57,7 +55,7 @@ public class Dispatcher extends Thread {
 
     public void sendToClient(int client_id, DataPacket packetToClient){
         try{
-            ((ObjectOutputStream)socketOutList.get(client_id)).writeObject(packetToClient);
+            ((ObjectOutputStream)outstreams.get(client_id)).writeObject(packetToClient);
 
             debug("sending packet "+ packetToClient.packet_type + ", called client " + client_id);
         } catch (IOException e) {
@@ -81,15 +79,16 @@ public class Dispatcher extends Thread {
 	if(packetToClients.packet_type == DataPacket.CLIENT_RESPAWN){
 	    try{
 	    // Go through each remote client	    
-	    for (ObjectOutputStream out : socketOutList.values()) {
-		out.writeObject(packetToClients);
-		System.out.println("DISPATCHER: Sending our respawn packets to other clients");
-	    }
-	    chandler.clientRespawnEvent(packetToClients);
+	    	for (ObjectOutputStream out : outstreams.values()) {
+	    		out.writeObject(packetToClients);
+	    		System.out.println("DISPATCHER: Sending our respawn packets to other clients");
+	    	}
+	    	chandler.clientRespawnEvent(packetToClients);
 	    }catch(Exception e){
+            e.printStackTrace();
 	    }
 	    return;
-	} else if(socketOutList.size() > 0){
+	} else if(outstreams.size() > 0){
             try{
                 // Request a lamport clock if there is more than one client.
 		// If packet is for Register, send it to clients right away
@@ -102,13 +101,13 @@ public class Dispatcher extends Thread {
 
                         // Request awknowledgement from everyone, but yourself
                         // Go through each remote client	    
-                        for (ObjectOutputStream out : socketOutList.values()) {
+                        for (ObjectOutputStream out : outstreams.values()) {
                             out.writeObject(getClock);
                             debug("Calling client for clock: " + requested_lc);	    
                         }
 
                         // Wait until all clients have aknowledged!
-                        data.acquireSemaphore(socketOutList.size());
+                        data.acquireSemaphore(outstreams.size());
 
                         // You've finally woken up
                         // Check if the lamport clock is valid
@@ -125,7 +124,7 @@ public class Dispatcher extends Thread {
                 }
 
                 // Go through each remote client	    
-                for (ObjectOutputStream out : socketOutList.values()) {
+                for (ObjectOutputStream out : outstreams.values()) {
                     out.writeObject(packetToClients);		    
                 }
 
@@ -144,11 +143,11 @@ public class Dispatcher extends Thread {
 
 	
         if(packetToClients.packet_type == DataPacket.CLIENT_REGISTER){
-            data.acquireSemaphore(socketOutList.size());
+            data.acquireSemaphore(outstreams.size());
             return;
         } else if (packetToClients.packet_type == DataPacket.CLIENT_SPAWN) {	            return;
         } else if (packetToClients.packet_type == DataPacket.CLIENT_QUIT) {
-	    data.acquireSemaphore(socketOutList.size());
+	    data.acquireSemaphore(outstreams.size());
 	    return;
 	}
 
