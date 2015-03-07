@@ -13,7 +13,6 @@ public class NameServerHandler extends Thread {
     private static ConcurrentHashMap<Integer, DataPacket> table; 
 
     public NameServerHandler(Socket socket, ConcurrentHashMap<Integer, DataPacket> table) {
-        super("LookupHandler");
         this.socket = socket;
         NameServerHandler.table = table;
     }
@@ -76,10 +75,6 @@ public class NameServerHandler extends Thread {
 	
                  
                     DataPacket newClient = new DataPacket();		    
-                   /* newClient.client_name = packetFromClient.client_name;
-                    newClient.client_host = packetFromClient.client_host;
-                    newClient.client_port = packetFromClient.client_port;*/
-                    
                     newClient = packetFromClient;
             
                     // Find empty ID

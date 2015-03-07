@@ -22,20 +22,20 @@ public class Broadcaster extends Thread {
 
     int LCLK;
     Semaphore sem;
-    ListenerData data;
+    DataPacketManager data;
     ClientHandlerThread chandler;
 
     Lock lock = new ReentrantLock();
 
     boolean debug = true;
 
-    public Broadcaster(ListenerData data, ClientHandlerThread chandler) {
+    public Broadcaster(DataPacketManager data, ClientHandlerThread chandler) {
         this.data = data;
         this.chandler = chandler;
-        this.movesQ = data.eventQueue;
-        this.clients = data.clientTable;
+        this.movesQ = data.gameMoves;
+        this.clients = data.playerTable;
         this.outstreams = data.socketOutList;
-        this.sem = data.sem;
+        this.sem = data.semaphore;
     }
 
     public void connectToPeer(Integer id, String host, int port) {

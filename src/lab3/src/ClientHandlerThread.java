@@ -24,7 +24,7 @@ import java.net.*;
 
 public class ClientHandlerThread extends Thread {
 	
-    Socket s;
+    Socket socket;
     Client me;
     int myId;
     Maze maze;
@@ -37,15 +37,14 @@ public class ClientHandlerThread extends Thread {
     int seqNum;
     boolean quitting = false;
 
-    ListenerData data = new ListenerData();
+    DataPacketManager data = new DataPacketManager();
 
     Broadcaster dispatcher = new Broadcaster(data, this);    
 
     DataPacket packetFromLookup = new DataPacket();
     DataPacket packetFromClient;
-    //ClientReciever mlistener;
 
-    boolean debug = true;
+    boolean DEBUG = true;
 
     ScoreTableModel scoreModel;
 
@@ -56,20 +55,19 @@ public class ClientHandlerThread extends Thread {
             System.out.println("Connecting to Naming Service...");
 
             // Connect to NameServer
-            s = new Socket(nameserver_host,nameserver_port);
-            out = new ObjectOutputStream(s.getOutputStream());
-            in = new ObjectInputStream(s.getInputStream());
+            socket = new Socket(nameserver_host,nameserver_port);
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
             clientTable = new ConcurrentHashMap();	 
             scoreModel = sm;
        
             // Start client listener
             // 		- for other clients to connect to
             //		- to handle incoming packets
-            ClientReciever mazewarListener = new ClientReciever(client_port,data, dispatcher, this);
-           // mlistener = mazewarListener;
+            ClientReciever mazewarListener = new ClientReciever(this,client_port, data, dispatcher);
             
-            Thread x = new Thread(mazewarListener);
-            x.start();
+            Thread thread = new Thread(mazewarListener);
+            thread.start();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -243,7 +241,7 @@ public class ClientHandlerThread extends Thread {
             //tc.getLock();
 
             Client sc = (lookupTable.get(s_id)).c;
-	    sc.getLock();
+            sc.getLock();
 
             Point p = packetFromClient.client_location;
             Direction d = packetFromClient.client_direction;
@@ -253,7 +251,7 @@ public class ClientHandlerThread extends Thread {
             tc.setKilledTo(false);
 
             //tc.releaseLock();
-	    sc.releaseLock();
+            sc.releaseLock();
 
         } else {
             System.out.println("CLIENT: no client with id " +packetFromClient.client_id+ " in respawn");
@@ -271,7 +269,7 @@ public class ClientHandlerThread extends Thread {
             //tc.getLock();
 
             Client sc = (lookupTable.get(s_id)).c;
-	    sc.getLock();
+            sc.getLock();
 
             Point p = packetFromClient.client_location;
             Direction d = packetFromClient.client_direction;
@@ -402,34 +400,31 @@ public class ClientHandlerThread extends Thread {
             quitting = true;
 
             try{
-
-
-
-		// Send to other clients you are quitting
-		DataPacket packetToClients = new DataPacket();
-		packetToClients.packet_type = DataPacket.CLIENT_QUIT;
-		packetToClients.client_id = myId;
-		dispatcher.send(packetToClients);
-
-		// Don't exit until you have recieved all acknowledgements
-		//data.acquireSemaphore(data.socketOutList.size());;
-
-		// Send lookup that you are quitting
-		DataPacket packetToLookup = new DataPacket();
-		packetToLookup.packet_type = DataPacket.LOOKUP_QUIT;
-		packetToLookup.client_id = myId;
-		out.writeObject(packetToLookup);
-		System.out.println("Client quit from lookup.");
-
-		System.out.println("Client about to leave.");
-
-		// Close lookup connection.
-                out.close();
-                in.close();
-                s.close();
-
-		// Close client connections.
-		// data.quit();
+				// Send to other clients you are quitting
+				DataPacket packetToClients = new DataPacket();
+				packetToClients.packet_type = DataPacket.CLIENT_QUIT;
+				packetToClients.client_id = myId;
+				dispatcher.send(packetToClients);
+		
+				// Don't exit until you have recieved all acknowledgements
+				//data.acquireSemaphore(data.socketOutList.size());;
+		
+				// Send lookup that you are quitting
+				DataPacket packetToLookup = new DataPacket();
+				packetToLookup.packet_type = DataPacket.LOOKUP_QUIT;
+				packetToLookup.client_id = myId;
+				out.writeObject(packetToLookup);
+				System.out.println("Client quit from lookup.");
+		
+				System.out.println("Client about to leave.");
+		
+				// Close lookup connection.
+		                out.close();
+		                in.close();
+		                socket.close();
+		
+				// Close client connections.
+				// data.quit();
 
             } catch(Exception e1){
                 System.out.println("CLIENT: Couldn't close sockets...");
@@ -521,7 +516,7 @@ public class ClientHandlerThread extends Thread {
     }
 
     public int getMyScore(){
-	return scoreModel.getScore(lookupTable.get(myId).c);
+    	return scoreModel.getScore(lookupTable.get(myId).c);
     }
 
     public void spawnClient(Integer id, ConcurrentHashMap<Integer,DataPacket> tuple, int score){
@@ -532,8 +527,8 @@ public class ClientHandlerThread extends Thread {
         RemoteClient c = new RemoteClient(cd.client_name);
         maze.addRemoteClient(c, cd.client_location, cd.client_direction);
 
-	// Update score
-	scoreModel.setScore(c,score);
+		// Update score
+		scoreModel.setScore(c,score);
 
         // Update tuple
         cd.c = c;
@@ -578,86 +573,95 @@ public class ClientHandlerThread extends Thread {
 
     public void runEventFromQueue(Integer lc){
         boolean executed;
-        Integer currentLC = data.getEventIndex();
+        Integer currentLC = data.getMoveIndex();
         System.out.println("CHANDLER: in runEventFromQueue, got lamportClock " + lc + ", current eventIndex is " + currentLC);
 
-        if (data.getEventIndex() == lc) {
+        if (data.getMoveIndex() == lc) {
             int i = lc;
             while (eventQueue[i] != null) {
                 System.out.println("CHANDLER: running event with lc = " + i);
                 packetFromClient = eventQueue[lc];
-		eventQueue[lc] = null;
+                eventQueue[lc] = null;
 
                 Client c = null;
                 if(packetFromClient.packet_type != DataPacket.CLIENT_SPAWN)
-		    if(packetFromClient.packet_type != DataPacket.CLIENT_QUIT)
-			c = (lookupTable.get(packetFromClient.client_id)).c;
+                	if(packetFromClient.packet_type != DataPacket.CLIENT_QUIT)
+                		c = (lookupTable.get(packetFromClient.client_id)).c;
 
                 executed = executeEvent(c);
                 if (!executed) break;
 
                 i = i + 1;
-		if(i == 20)
-		    i = 0;
+                if(i == 20)
+                	i = 0;
             }
             System.out.println("CHANDLER: eventIndex is now  " + i);
-            data.setEventIndex(i);
+            data.setMoveIndex(i);
             //if(packetFromClient.client_id != myId)
             //    data.incrementLamportClock();
         } 
     }
 
     private boolean executeEvent(Client c) {
-        // called in runEventFromQueue
-        boolean success = true;
+        boolean status = true;
 
         if(c != null)
             c.getLock();		
 
-        switch (packetFromClient.packet_type) {
-            case DataPacket.CLIENT_REGISTER:
-                addClientEvent();
-                break;
-            case DataPacket.CLIENT_FORWARD:	
-                clientForwardEvent(c);
-                break;
-            case DataPacket.CLIENT_BACK:
-                clientBackEvent(c);
-                break;
-            case DataPacket.CLIENT_LEFT:
-                clientLeftEvent(c);
-                break;
-            case DataPacket.CLIENT_RIGHT:
-                clientRightEvent(c);
-                break;
-            case DataPacket.CLIENT_FIRE:
-                clientFireEvent(c);
-                break;
-            case DataPacket.CLIENT_RESPAWN:
-                clientRespawnEvent();
-                break;
-            case DataPacket.CLIENT_QUIT:
-                clientQuitEvent();
-                break;
-            case DataPacket.CLIENT_SPAWN:
-                spawnClient();
-                break;
-            default:
-                System.out.println("Could not recognize packet type:" + packetFromClient.packet_type);
-                success = false;
-                break;
+        int type = packetFromClient.packet_type;
+        
+        if (DataPacket.CLIENT_LEFT == type) {
+        	
+        	clientLeftEvent(c);
+        	
+        } else if (DataPacket.CLIENT_RIGHT == type) {
+        	
+        	clientRightEvent(c);
+        	
+        } else if (DataPacket.CLIENT_BACK == type) {
+        	
+        	clientBackEvent(c);
+        	
+        } else if (DataPacket.CLIENT_FORWARD == type) {
+        	
+        	clientForwardEvent(c);
+        	
+        } else if (DataPacket.CLIENT_SPAWN == type) {
+        	
+        	spawnClient();
+        	
+        } else if (DataPacket.CLIENT_RESPAWN == type) {
+        	
+        	clientRespawnEvent();
+        	
+        } else if (DataPacket.CLIENT_FIRE == type) {
+        	
+        	clientFireEvent(c);
+        	
+        } else if (DataPacket.CLIENT_REGISTER == type) {
+        	
+        	addClientEvent();
+        	
+        } else if (DataPacket.CLIENT_QUIT == type) {
+        	
+        	clientQuitEvent();
+        	
+        } else {
+            status = false;
+            System.out.println("ERROR: UNKNOWN PACKET TYPE" + packetFromClient.packet_type);
         }
 
         if(c != null)
             c.releaseLock();
 
-	System.out.println("I RELEASED THE LOCK!!!");
-        return success;
+        System.out.println("SYNCRONIZATION: LOCK RELEASED");
+        return status;
     }
 
+    //BABNEET - REMOVE
     private void debug(String s) {
-        if (debug) {
-            System.out.println("CHANDLER: " + s);
+        if (DEBUG) {
+            System.out.println("DEBUG: (ClientHandlerThread) " + s);
         }
     }
 

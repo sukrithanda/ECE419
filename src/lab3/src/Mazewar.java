@@ -92,7 +92,7 @@ public class Mazewar extends JFrame {
     ObjectInputStream in = null;
 
     /* ADDING - game data */
-    BlockingQueue<MazeEvent> eventQueue;
+    BlockingQueue<ClientConnectInfo> eventQueue;
     ConcurrentHashMap<String, Point> clientTable;
 
     /** 

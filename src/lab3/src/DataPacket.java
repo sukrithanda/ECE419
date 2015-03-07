@@ -78,7 +78,7 @@ public class DataPacket implements Serializable {
     int ack_num;
 
     // Event
-    public MazeEvent event;
+    public ClientConnectInfo event;
 
     // Game data
     // Contains all client information within Client data

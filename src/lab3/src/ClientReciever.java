@@ -5,38 +5,35 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.io.*;
 import java.net.*;
 
-/* MazewarListener class
- *
- * Recieve all client event packets
- *
+/*
+ * ClientReceiver - Receive DataPackets from all clients
  */
+
 public class ClientReciever extends Thread{
 
-    Broadcaster bd;
-    ListenerData data;
-    ClientHandlerThread handler;
-    int client_port;
-
-    public ClientReciever(int client_port, ListenerData data, Broadcaster bd, ClientHandlerThread handler){
-	this.client_port = client_port;
-	this.bd = bd;
-	this.data = data;
-	this.handler = handler;            }
+	int portClient;
+	DataPacketManager listenerData;
+    Broadcaster broadcaster;
+    ClientHandlerThread clientHandler;
 
     public void run(){
-        //ServerSocket receiver_socket = null;
-	try{
-			ServerSocket receiver_socket = new ServerSocket(client_port);
-
-	    /* Listen for new remote clients */
+    	try{
+			ServerSocket receiver_socket = new ServerSocket(portClient);
 			while (true) {
-				new ClientRecieverThread(receiver_socket.accept(), data, bd, handler).start();	    
+				new ClientRecieverThread(clientHandler, receiver_socket.accept(), listenerData, broadcaster).start();	    
 			}
-  
         } catch (IOException e) {
-            System.err.println("ERROR: Could not listen on port!");
+            System.err.println("ERROR: Unable to establish connection on client Port " + portClient);
             System.exit(-1);
         }
     }
+    
+    public ClientReciever(ClientHandlerThread clientHandler, int portClient, 
+    		DataPacketManager listenerData, Broadcaster broadcaster){
+		this.portClient = portClient;
+		this.listenerData = listenerData;
+		this.broadcaster = broadcaster;
+		this.clientHandler = clientHandler;            
+	}
 }
 

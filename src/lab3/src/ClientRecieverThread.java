@@ -6,136 +6,125 @@ import java.util.Random;
 import java.io.*;
 import java.net.*;
 
-/* MazewarListenerHandlerThread class
- *
- * MazewarListener spawns this thread for each remote
- * client that connects
+import javax.xml.crypto.Data;
+
+/*
+ * ClientReceiverThread - Receives DataPackets from each remote client
  */
 
 public class ClientRecieverThread extends Thread {
-    Socket rcSocket = null;
-    ListenerData data = null;
+    DataPacket sendPacketRemoteClient;
+    DataPacket receivedPacketRemoteClient;
+    
+    ObjectInputStream inputStream;
+    ObjectOutputStream outputStream;
+    
+    ClientHandlerThread clientHandler;
+    Broadcaster broadcaster;
+    int clockLamport;
 
-    ObjectInputStream cin;
-    ObjectOutputStream cout;
+    DataPacketManager listenerData = null;
+    Socket remoteClientSocket = null;
 
-    DataPacket packetFromRC;
-    DataPacket packetToRC;
+    boolean terminate = false;
+    boolean DEBUG = true;
 
-    Random rand = new Random();
-
-    Integer myId;
-    int seqNum = 1;
-    boolean quitting = false;
-
-    int lamportClock;
-    Broadcaster dispatcher;
-    ClientHandlerThread chandler;
-
-    boolean debug = true;
-
-    public ClientRecieverThread (Socket socket, ListenerData sdata, Broadcaster dispatcher, ClientHandlerThread chandler) throws IOException {
-        super("MazewarListenerHandlerThread");
+    public ClientRecieverThread (ClientHandlerThread clientHandler, Socket socket, 
+    		DataPacketManager listenerData, Broadcaster broadcaster) throws IOException {
         try {
-            this.rcSocket = socket;
-            this.cout = new ObjectOutputStream(rcSocket.getOutputStream());
-            this.data = sdata;
-            this.dispatcher = dispatcher;
-            //data.addSocketOutToList(cout);
-
-            this.chandler = chandler;
-
-            System.out.println("Created new MazewarListenerHandlerThread to handle remote client ");
+        	print("Starting");
+            this.remoteClientSocket = socket;
+            this.broadcaster = broadcaster;
+            this.clientHandler = clientHandler;
+            this.listenerData = listenerData;
+            this.outputStream = new ObjectOutputStream(remoteClientSocket.getOutputStream());
         } catch (IOException e) {
-            System.out.println("IO Exception");
+            print("Exception");
         }
     }
 
     public void run() {
-        System.out.println("Connecting to client...");
         try {
-            /* Loop: 
-            */
-            cin = new ObjectInputStream(rcSocket.getInputStream());
-            while (!quitting && ((packetFromRC = (DataPacket) cin.readObject()) != null)) {
-                debug("packet type is " + packetFromRC.packet_type);
-                DataPacket eventPacket = new DataPacket();
+            inputStream = new ObjectInputStream(remoteClientSocket.getInputStream());
+            while (((receivedPacketRemoteClient = (DataPacket) inputStream.readObject()) != null) && !terminate) {
+                int type = receivedPacketRemoteClient.packet_type;
+                print("Received Packet of type " + type);
+                
+                DataPacket dataPacket = new DataPacket();
 
                 /* Process each packet */
-                switch (packetFromRC.packet_type) {
+                switch (receivedPacketRemoteClient.packet_type) {
                     case DataPacket.CLIENT_CLOCK:
                        // clientClock();
-                        int requested_lc = packetFromRC.lamportClock;    
-                        eventPacket.packet_type = DataPacket.CLIENT_ACK;
-                        data.getLock();
+                        int requested_lc = receivedPacketRemoteClient.lamportClock;    
+                        dataPacket.packet_type = DataPacket.CLIENT_ACK;
+                        listenerData.acquireLock();
 
-                        debug("requested_lc: " + requested_lc + " current lamportClock: " + data.getLamportClock());
-                        eventPacket.lamportClock = data.getLamportClock();
+                        print("requested_lc: " + requested_lc + " current lamportClock: " + listenerData.getLamportClock());
+                        dataPacket.lamportClock = listenerData.getLamportClock();
 
-                        if(requested_lc >= lamportClock){
-                            debug("incrementing my lc after recieving CLIENT_CLOCK packet");
+                        if(requested_lc >= clockLamport){
+                            print("incrementing my lc after recieving CLIENT_CLOCK packet");
                             // Clock is valid!
                             if(requested_lc == 19){
-                            	data.setLamportClock(0);
+                            	listenerData.setLamportClock(0);
                             } else {
-                            	data.setLamportClock(++requested_lc);
+                            	listenerData.setLamportClock(++requested_lc);
                             }
                             //Set up and send awknowledgement packet
                             //eventPacket.lamportClock = lamportClock;]
-                            eventPacket.isValidClock = true;
+                            dataPacket.isValidClock = true;
 
-                            debug("Incremented lc is " + data.getLamportClock());
+                            print("Incremented lc is " + listenerData.getLamportClock());
 
                         } else{
                             // Oh no! The lamport clock is not valid.
                             // Send the latest lamport clock and disawknowledgement packet
-                            eventPacket.isValidClock = false;
+                            dataPacket.isValidClock = false;
                         }
 
-                        debug("Clock is " + eventPacket.isValidClock + " with timestamp " + eventPacket.lamportClock);
+                        print("Clock is " + dataPacket.isValidClock + " with timestamp " + dataPacket.lamportClock);
 
-                        data.releaseLock();
-                        dispatcher.sendToClient(packetFromRC.client_id, (DataPacket) eventPacket);
+                        listenerData.freeLock();
+                        broadcaster.sendToClient(receivedPacketRemoteClient.client_id, (DataPacket) dataPacket);
                         break;
                     case DataPacket.CLIENT_ACK:
                        // clientAck();
-                        int lamportClock = packetFromRC.lamportClock;
-                        boolean clockIsValid = packetFromRC.isValidClock;
+                        int lamportClock = receivedPacketRemoteClient.lamportClock;
+                        boolean clockIsValid = receivedPacketRemoteClient.isValidClock;
 
                         if(!clockIsValid){
                             // Update the current lamport clock
-                            debug("Awknowledgement failed. LC set to: " +  packetFromRC.lamportClock);
-                            data.setClockAndIndex(packetFromRC.lamportClock);
+                            print("Awknowledgement failed. LC set to: " +  receivedPacketRemoteClient.lamportClock);
+                            listenerData.setClockAndIndex(receivedPacketRemoteClient.lamportClock);
                         }
 
-                        data.releaseSemaphore(1);
+                        listenerData.freeSemaphore(1);
                         break;
                     case DataPacket.CLIENT_REGISTER:
                         try {
-                            debug("registerClientEvent");
+                            print("registerClientEvent");
 
                             /* Wait for handshaking packet from client, store client state in 
                              * global client table */
                             //DataPacket eventPacket2 = new DataPacket();
 
                             /* Add to client list */
-                            eventPacket.client_id = chandler.getMyId();
-                            eventPacket.packet_type = DataPacket.CLIENT_SPAWN;
-                            eventPacket.for_new_client = true;
-                            eventPacket.NameServerTable = new ConcurrentHashMap();
-                            eventPacket.NameServerTable.put(chandler.getMyId(), chandler.getMe());
-                            eventPacket.client_score = chandler.getMyScore();
-
-                            eventPacket.lamportClock = data.getLamportClock();
+                            dataPacket = setup(dataPacket, clientHandler.getMyId(), DataPacket.CLIENT_SPAWN, 
+                            		listenerData.getLamportClock());
+                            dataPacket.for_new_client = true;
+                            dataPacket.NameServerTable = new ConcurrentHashMap();
+                            dataPacket.NameServerTable.put(clientHandler.getMyId(), clientHandler.getMe());
+                            dataPacket.client_score = clientHandler.getMyScore();
 
                             /* Get new client socket info */
-                            String hostname = packetFromRC.client_host;
-                            Integer id = packetFromRC.client_id;
-                            int port = packetFromRC.client_port;
-                            dispatcher.connectToPeer(id, hostname, port);
+                            String hostname = receivedPacketRemoteClient.client_host;
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            int port = receivedPacketRemoteClient.client_port;
+                            broadcaster.connectToPeer(id, hostname, port);
 
                             /* Add packet to event queue */
-                            dispatcher.sendToClient(id,eventPacket);
+                            broadcaster.sendToClient(id,dataPacket);
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -143,118 +132,97 @@ public class ClientRecieverThread extends Thread {
                         break;
                     case DataPacket.CLIENT_SPAWN:
                        // clientSpawn();
-                        if (packetFromRC.for_new_client) {
+                        if (receivedPacketRemoteClient.for_new_client) {
 
                             // Update to the latest lamport clock
-                            if(data.getLamportClock() < packetFromRC.lamportClock)
-                            		data.setClockAndIndex(packetFromRC.lamportClock);
+                            if(listenerData.getLamportClock() < receivedPacketRemoteClient.lamportClock)
+                            		listenerData.setClockAndIndex(receivedPacketRemoteClient.lamportClock);
                 	    
 
-                            chandler.spawnClient(packetFromRC.client_id,packetFromRC.NameServerTable, packetFromRC.client_score);
+                            clientHandler.spawnClient(receivedPacketRemoteClient.client_id,receivedPacketRemoteClient.NameServerTable, receivedPacketRemoteClient.client_score);
 
-                            data.releaseSemaphore(1);
+                            listenerData.freeSemaphore(1);
 
                         } else { 
-                            chandler.addEventToQueue(packetFromRC);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(receivedPacketRemoteClient);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         }
                         break;
                     case DataPacket.CLIENT_FORWARD:
-                        //clientForwardEvent();
                         try { 
-                            Integer id = packetFromRC.client_id;
-                            debug(id + " forward");
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            dataPacket = setup(dataPacket, id, DataPacket.CLIENT_FORWARD, receivedPacketRemoteClient.lamportClock);
+                            print(id + " forward");
+                            print("Lamport Clock "+ dataPacket.lamportClock);
 
-                            eventPacket.client_id = id;
-                            eventPacket.packet_type = DataPacket.CLIENT_FORWARD;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-
-                            System.out.println("LISTENER: THIS IS THE LAMPORT CLOCK: "+ eventPacket.lamportClock);
-
-                            chandler.addEventToQueue(eventPacket);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_BACK:
-                       // clientBackEvent();
                         try { 
-                            Integer id = packetFromRC.client_id;
-                            debug(id + " back");
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            print(id + " back");
+                            dataPacket = setup(dataPacket, id, DataPacket.CLIENT_BACK, receivedPacketRemoteClient.lamportClock);
 
-                            eventPacket.client_id = id;
-                            eventPacket.packet_type = DataPacket.CLIENT_BACK;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-
-                            chandler.addEventToQueue(eventPacket);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_LEFT:
-                       // clientLeftEvent();
                         try { 
-                            Integer id = packetFromRC.client_id;
-                            debug(id + " left");
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            print(id + " left");
+                            dataPacket = setup(dataPacket, id, DataPacket.CLIENT_LEFT, receivedPacketRemoteClient.lamportClock);
 
-                            eventPacket.client_id = id;
-                            eventPacket.packet_type = DataPacket.CLIENT_LEFT;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-
-                            chandler.addEventToQueue(eventPacket);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_RIGHT:
                     	try { 
-                            Integer id = packetFromRC.client_id;
-                            debug(id + " right");
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            print(id + " right");
+                            dataPacket = setup(dataPacket, id, DataPacket.CLIENT_RIGHT, receivedPacketRemoteClient.lamportClock);
 
-                            eventPacket.client_id = id;
-                            eventPacket.packet_type = DataPacket.CLIENT_RIGHT;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-
-                            chandler.addEventToQueue(eventPacket);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_FIRE:
                     	try { 
-                            Integer id = packetFromRC.client_id;
-                            debug(id + " fire");
+                            Integer id = receivedPacketRemoteClient.client_id;
+                            print(id + " fire");
+                            dataPacket = setup(dataPacket, id, DataPacket.CLIENT_FIRE, receivedPacketRemoteClient.lamportClock);
 
-                            eventPacket.client_id = id;
-                            eventPacket.packet_type = DataPacket.CLIENT_FIRE;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-
-                            chandler.addEventToQueue(eventPacket);
-                            chandler.runEventFromQueue(packetFromRC.lamportClock);
+                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_RESPAWN:
                     	try { 
-                            Point p = packetFromRC.client_location;
-                            Direction d = packetFromRC.client_direction;
+                            Point p = receivedPacketRemoteClient.client_location;
+                            Direction d = receivedPacketRemoteClient.client_direction;
 
-                            debug(packetFromRC.target + " respawning");
-
-                            eventPacket.client_id = packetFromRC.client_id;
-                            eventPacket.lamportClock = packetFromRC.lamportClock;
-                            eventPacket.shooter = packetFromRC.shooter;
-                            eventPacket.target = packetFromRC.target;
-                            eventPacket.client_location = p;
-                            eventPacket.client_direction = d;
-                            eventPacket.packet_type = DataPacket.CLIENT_RESPAWN;
-
-                            chandler.clientRespawnEvent(packetFromRC);
+                            print(receivedPacketRemoteClient.target + " respawning");
+                            
+                            dataPacket = setup(dataPacket, receivedPacketRemoteClient.client_id, 
+                            		DataPacket.CLIENT_RESPAWN, receivedPacketRemoteClient.lamportClock);
+                            dataPacket.client_location = p;
+                            dataPacket.client_direction = d;
+                            dataPacket.shooter = receivedPacketRemoteClient.shooter;
+                            dataPacket.target = receivedPacketRemoteClient.target;
+                            clientHandler.clientRespawnEvent(receivedPacketRemoteClient);
            
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -262,23 +230,23 @@ public class ClientRecieverThread extends Thread {
                         break;
                     case DataPacket.RESERVE_POINT:
                     	/* Add to client list */
-                        String rc_name = packetFromRC.client_name;
-                        Point rc_point = packetFromRC.client_location;
+                        String remoteClientName = receivedPacketRemoteClient.client_name;
+                        Point remoteClientLocation = receivedPacketRemoteClient.client_location;
 
 
                         DataPacket listenerResponse = new DataPacket();
                         listenerResponse.packet_type = DataPacket.RESERVE_POINT; 	    
 
-                        if(data.setPosition(rc_name,rc_point)){
+                        if(listenerData.setPosition(remoteClientName,remoteClientLocation)){
                             listenerResponse.error_code = 0;
-                            debug("reserving position successful. " + rc_name );
+                            print("reserving position successful. " + remoteClientName );
                         }else{	
                             listenerResponse.error_code = DataPacket.ERROR_RESERVED_POSITION;
-                            debug("Reserving position failed. " + rc_name );
+                            print("Reserving position failed. " + remoteClientName );
                         }
 
                         try{
-                            cout.writeObject(listenerResponse);
+                            outputStream.writeObject(listenerResponse);
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -287,37 +255,36 @@ public class ClientRecieverThread extends Thread {
                         continue;	  
                     case DataPacket.GET_SEQ_NUM:
                     	try { 
-                            debug("in getSeqNum");
+                            print("in getSeqNum");
 
-                            eventPacket.packet_type = DataPacket.GET_SEQ_NUM;
+                            dataPacket.packet_type = DataPacket.GET_SEQ_NUM;
 
-                            chandler.addEventToQueue(eventPacket);
+                            clientHandler.addEventToQueue(dataPacket);
                         } catch (Exception e) {
                              e.printStackTrace();
                         }
                         continue;
                     case DataPacket.CLIENT_QUIT:
                     	try{
-                	    eventPacket.client_id = packetFromRC.client_id;
-                	    eventPacket.packet_type = DataPacket.CLIENT_REL_SEM;
-                	    eventPacket.lamportClock = packetFromRC.lamportClock;
-                    
-                	    dispatcher.sendToClient(packetFromRC.client_id, eventPacket);
-                            data.removeSocketOutFromList(packetFromRC.client_id);
-
+                    		dataPacket = setup(dataPacket, receivedPacketRemoteClient.client_id,
+                    				DataPacket.CLIENT_REL_SEM, receivedPacketRemoteClient.lamportClock);
+	                    
+	                	    broadcaster.sendToClient(receivedPacketRemoteClient.client_id, dataPacket);
+                            listenerData.removeSocketOutFromList(receivedPacketRemoteClient.client_id);
+	
                             // Close all connections!
-                            cin.close();
-                            cout.close();
-                            rcSocket.close();
+                            inputStream.close();
+                            outputStream.close();
+                            remoteClientSocket.close();
 
-                            chandler.addEventToQueue(packetFromRC);
-                	    chandler.runEventFromQueue(packetFromRC.lamportClock);
+	                        clientHandler.addEventToQueue(receivedPacketRemoteClient);
+	                	    clientHandler.runEventFromQueue(receivedPacketRemoteClient.lamportClock);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         break;
                     case DataPacket.CLIENT_REL_SEM:
-                    	data.releaseSemaphore(1);
+                    	listenerData.freeSemaphore(1);
                     	System.out.println("Released a semaphore");
                     	break;
                     default:
@@ -331,9 +298,15 @@ public class ClientRecieverThread extends Thread {
         }
     }
 
-    public void debug(String s) {
-        if (debug) {
-            System.out.println("CLIENT RECEIVER: " + s);
+    public DataPacket setup (DataPacket dp, int clientID, int packetType, int clockLamport) {
+    	dp.client_id = clientID;
+	    dp.packet_type = packetType;
+	    dp.lamportClock = clockLamport;
+    	return dp;
+    }
+    public void print(String s) {
+        if (DEBUG) {
+            System.out.println("DEBUG: (ClientReceiverThread) " + s);
         }
     }
 
