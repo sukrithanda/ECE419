@@ -14,11 +14,11 @@ Only in ref2/src: Catcher.java      -- NOT USED - REMOVED
 Only in ref2/src: ClientData.java   -- Removed dont need we can just use DataPacket.java
 Only in ref2/src: ClientHandlerThread.java
 Only in ref2/src: Dispatcher.java    --Broadcaster.java
-Only in ref2/src: ListenerData.java 
+Only in ref2/src: ListenerData.java   -- DataPacketManager.java
 Only in ref2/src: LookupBroadcast.java --NOT USED -REMOVED
 Only in ref2/src: LookupHandler.java   --NameServerHandler.java
 Only in ref2/src: Lookup.java          --NameServer.java
-Only in ref2/src: MazeEvent.java
+Only in ref2/src: MazeEvent.java       -- ClientConnectInfo.java
 Only in ref2/src: MazePacket.java      --DataPacket.java
 Only in ref2/src: MazewarListenerHandlerThread.java  -ClientRevieverThread.java
 Only in ref2/src: MazewarListener.java  --ClientReciever.java
