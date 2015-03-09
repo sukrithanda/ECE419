@@ -6,16 +6,16 @@ MazeEvent.java       -- ClientConnectInfo.java
 Dispatcher.java    --Broadcaster.java
 ListenerData.java   -- DataPacketManager.java
 ClientHandlerThread.java
-MazewarListenerHandlerThread.java  -ClientRevieverThread.java
-MazewarListener.java  --ClientReciever.java
+MazewarListenerHandlerThread.java  -ClientRevieverThread.java - Sukrit
+MazewarListener.java  --ClientReciever.java -Sukrit
 
-LookupHandler.java   --NameServerHandler.java
-Lookup.java          --NameServer.java
+LookupHandler.java   --NameServerHandler.java -Sukrit
+Lookup.java          --NameServer.java -Sukrit
 
 Removed Files: 
 
 MazewarServerHandlerThread.java --NOT USED - REMOVED
-MazewarServer.java              --NOT USED - REMOVED
+MazewarServer.java              --NOokayT USED - REMOVED
 ServerData.java             --NOT USED - REMOVED
 Catcher.java      -- NOT USED - REMOVED
 ClientData.java   -- Removed dont need we can just use DataPacket.java
