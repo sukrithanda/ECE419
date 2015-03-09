@@ -1,28 +1,37 @@
-Files lab3/src/Client.java and ref2/src/Client.java differ
-Files lab3/src/DirectedPoint.java and ref2/src/DirectedPoint.java differ
-Files lab3/src/Direction.java and ref2/src/Direction.java differ
-Files lab3/src/GUIClient.java and ref2/src/GUIClient.java differ
-Files lab3/src/Makefile and ref2/src/Makefile differ
-Files lab3/src/Makefile.dep and ref2/src/Makefile.dep differ
-Files lab3/src/MazeImpl.java and ref2/src/MazeImpl.java differ
-Files lab3/src/Maze.java and ref2/src/Maze.java differ
-Files lab3/src/Mazewar.java and ref2/src/Mazewar.java differ
-Files lab3/src/OverheadMazePanel.java and ref2/src/OverheadMazePanel.java differ
-Files lab3/src/Projectile.java and ref2/src/Projectile.java differ
-Files lab3/src/ScoreTableModel.java and ref2/src/ScoreTableModel.java differ
-Only in ref2/src: Catcher.java      -- NOT USED - REMOVED
-Only in ref2/src: ClientData.java   -- Removed dont need we can just use DataPacket.java
-Only in ref2/src: ClientHandlerThread.java
-Only in ref2/src: Dispatcher.java    --Broadcaster.java
-Only in ref2/src: ListenerData.java   -- DataPacketManager.java
-Only in ref2/src: LookupBroadcast.java --NOT USED -REMOVED
-Only in ref2/src: LookupHandler.java   --NameServerHandler.java
-Only in ref2/src: Lookup.java          --NameServer.java
-Only in ref2/src: MazeEvent.java       -- ClientConnectInfo.java
-Only in ref2/src: MazePacket.java      --DataPacket.java
-Only in ref2/src: MazewarListenerHandlerThread.java  -ClientRevieverThread.java
-Only in ref2/src: MazewarListener.java  --ClientReciever.java
-Only in ref2/src: MazewarServerHandlerThread.java --NOT USED - REMOVED
-Only in ref2/src: MazewarServer.java              --NOT USED - REMOVED
-Only in ref2/src: ServerData.java             --NOT USED - REMOVED
+New FILES:
 
+MazePacket.java      --DataPacket.java
+MazeEvent.java       -- ClientConnectInfo.java
+
+Dispatcher.java    --Broadcaster.java
+ListenerData.java   -- DataPacketManager.java
+ClientHandlerThread.java
+MazewarListenerHandlerThread.java  -ClientRevieverThread.java
+MazewarListener.java  --ClientReciever.java
+
+LookupHandler.java   --NameServerHandler.java
+Lookup.java          --NameServer.java
+
+Removed Files: 
+
+MazewarServerHandlerThread.java --NOT USED - REMOVED
+MazewarServer.java              --NOT USED - REMOVED
+ServerData.java             --NOT USED - REMOVED
+Catcher.java      -- NOT USED - REMOVED
+ClientData.java   -- Removed dont need we can just use DataPacket.java
+LookupBroadcast.java --NOT USED -REMOVED
+
+Existing FILES:
+
+Client.java differ
+DirectedPoint.java differ
+Direction.java differ
+GUIClient.java differ
+Makefile differ
+Makefile.dep differ
+MazeImpl.java differ
+Maze.java differ
+Mazewar.java differ
+OverheadMazePanel.java differ
+Projectile.java differ
+ScoreTableModel.java differ
