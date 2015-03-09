@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Date;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -17,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Broadcaster extends Thread {
     LinkedBlockingQueue<DataPacket> movesQ = null;
     ConcurrentHashMap<String, DataPacket> clients= null;
-    ConcurrentHashMap<Integer, ObjectOutputStream> outstreams = new ConcurrentHashMap(); 
+    ConcurrentHashMap<Integer, ObjectOutputStream> outstreams = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
     int seqNum;
 
     int LCLK;

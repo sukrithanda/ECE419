@@ -17,26 +17,25 @@
    USA.
    */
 
-import javax.swing.JPanel;
-import javax.swing.JTextPane;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.font.GlyphVector;
-import java.awt.font.FontRenderContext;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Dimension;
-import java.awt.Color;
-import java.awt.Polygon;
 import java.awt.RenderingHints;
-import java.awt.geom.Arc2D;
 import java.awt.Shape;
-import java.awt.BasicStroke;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.geom.Arc2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.swing.JPanel;
 
 /**
  * A {@link JPanel} that has been extended so that is will display an overhead view

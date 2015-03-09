@@ -17,31 +17,22 @@
    USA.
    */
 
-import java.lang.Thread;
-import java.lang.Runnable;
-import java.io.Serializable;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Random;
-import java.util.Vector;  
-import java.util.Map;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Collection;
 import java.util.LinkedList;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import java.io.*;
-import java.net.*;
-import java.net.ServerSocket;
 
 /**
  * A concrete implementation of a {@link Maze}.  

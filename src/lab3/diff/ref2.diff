@@ -6,11 +6,11 @@ MazeEvent.java       -- ClientConnectInfo.java
 Dispatcher.java    --Broadcaster.java
 ListenerData.java   -- DataPacketManager.java
 ClientHandlerThread.java
-MazewarListenerHandlerThread.java  -ClientRevieverThread.java - Sukrit
-MazewarListener.java  --ClientReciever.java -Sukrit
+MazewarListenerHandlerThread.java  -ClientRevieverThread.java - Sukrit - variables changed /functions inlined
+MazewarListener.java  --ClientReciever.java -Sukrit - variables changed
 
-LookupHandler.java   --NameServerHandler.java -Sukrit
-Lookup.java          --NameServer.java -Sukrit
+LookupHandler.java   --NameServerHandler.java -Sukrit -variables changed/inlined
+Lookup.java          --NameServer.java -Sukrit  -variables changed
 
 Removed Files: 
 

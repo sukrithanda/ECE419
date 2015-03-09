@@ -1,9 +1,5 @@
+import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import java.io.*;
-import java.net.*;
 
 /*
  * ClientReceiver - Receive DataPackets from all clients
@@ -11,29 +7,29 @@ import java.net.*;
 
 public class ClientReciever extends Thread{
 
-	int portClient;
-	DataPacketManager listenerData;
+	int clientSocketPort;
+	DataPacketManager manager;
     Broadcaster broadcaster;
     ClientHandlerThread clientHandler;
-
+    public ClientReciever(ClientHandlerThread clientHandler, int portClient, DataPacketManager listenerData, Broadcaster broadcaster){
+		this.clientSocketPort = portClient;
+		this.manager = listenerData;
+		this.broadcaster = broadcaster;
+		this.clientHandler = clientHandler;            
+	}
+    
     public void run(){
     	try{
-			ServerSocket receiver_socket = new ServerSocket(portClient);
+			ServerSocket receiver_socket = new ServerSocket(clientSocketPort);
 			while (true) {
-				new ClientRecieverThread(clientHandler, receiver_socket.accept(), listenerData, broadcaster).start();	    
+				new ClientRecieverThread(clientHandler, receiver_socket.accept(), manager, broadcaster).start();	    
 			}
         } catch (IOException e) {
-            System.err.println("ERROR: Unable to establish connection on client Port " + portClient);
+            System.err.println("ERROR: Unable to establish connection on client Port " + clientSocketPort);
             System.exit(-1);
         }
     }
     
-    public ClientReciever(ClientHandlerThread clientHandler, int portClient, 
-    		DataPacketManager listenerData, Broadcaster broadcaster){
-		this.portClient = portClient;
-		this.listenerData = listenerData;
-		this.broadcaster = broadcaster;
-		this.clientHandler = clientHandler;            
-	}
+   
 }
 

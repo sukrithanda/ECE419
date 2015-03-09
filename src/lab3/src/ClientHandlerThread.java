@@ -1,14 +1,12 @@
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Random;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.io.*;
-import java.net.*;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 /* Client handler 
  * Each client will be registered with a client handler
@@ -58,7 +56,7 @@ public class ClientHandlerThread extends Thread {
             socket = new Socket(nameserver_host,nameserver_port);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
-            clientTable = new ConcurrentHashMap();	 
+            clientTable = new ConcurrentHashMap<String, Client>();	 
             scoreModel = sm;
        
             // Start client listener
@@ -171,7 +169,7 @@ public class ClientHandlerThread extends Thread {
     	}
     	
         // Get the current lookup table
-        lookupTable = new ConcurrentHashMap();
+        lookupTable = new ConcurrentHashMap<Integer, DataPacket>();
         lookupTable = packetFromLookup.NameServerTable;
 
         myId = packetFromLookup.client_id;

@@ -18,8 +18,6 @@ USA.
 */
  
 import java.util.Random;
-import java.util.Vector;
-import java.lang.Runnable;
 
 /**
  * A very naive implementation of a computer controlled {@link LocalClient}.  Basically

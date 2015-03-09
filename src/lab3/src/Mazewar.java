@@ -17,24 +17,22 @@
    USA.
  */
 
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.JPanel;
-import javax.swing.JTable;
-import javax.swing.JOptionPane;
-import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
-import javax.swing.BorderFactory;
-import java.io.Serializable;
-import java.util.Random;
+import java.awt.GridBagLayout;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import java.io.*;
-import java.net.*;
+import javax.swing.BorderFactory;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextPane;
 
 /**
  * The entry point and glue code for the game.  It also contains some helpful
