@@ -56,7 +56,7 @@ public class Broadcaster extends Thread {
         try{
             ((ObjectOutputStream)outstreams.get(client_id)).writeObject(packetToClient);
 
-            debug("sending packet "+ packetToClient.packet_type + ", called client " + client_id);
+            debug("sending packet "+ packetToClient.scenarioType + ", called client " + client_id);
         } catch (IOException e) {
             e.printStackTrace();
         }  
@@ -65,17 +65,17 @@ public class Broadcaster extends Thread {
     public void send(DataPacket packetToClients){
         // Try and get a valid lamport clock!
         DataPacket getClock = new DataPacket();
-        packetToClients.lamportClock = data.getLamportClock();
+        packetToClients.lampClk = data.getLamportClock();
 
 	// Get timestamp for report
 	Date date = new Date();
 	System.out.println("Current timestamp " + date.getTime());
 
 
-	System.out.println("Client want to send out packet type " + packetToClients.packet_type);
+	System.out.println("Client want to send out packet type " + packetToClients.scenarioType);
 
         int requested_lc;
-	if(packetToClients.packet_type == DataPacket.CLIENT_RESPAWN){
+	if(packetToClients.scenarioType == DataPacket.PLAYER_RESPAWN){
 	    try{
 	    // Go through each remote client	    
 	    	for (ObjectOutputStream out : outstreams.values()) {
@@ -91,12 +91,12 @@ public class Broadcaster extends Thread {
             try{
                 // Request a lamport clock if there is more than one client.
 		// If packet is for Register, send it to clients right away
-                if(packetToClients.packet_type != DataPacket.CLIENT_REGISTER){
+                if(packetToClients.scenarioType != DataPacket.PLAYER_REGISTER){
                     while(true){
-                        getClock.packet_type = DataPacket.CLIENT_CLOCK;
+                        getClock.scenarioType = DataPacket.PLAYER_CLK;
                         requested_lc = data.getLamportClock();
-                        getClock.lamportClock = requested_lc;
-                        getClock.client_id = packetToClients.client_id;
+                        getClock.lampClk = requested_lc;
+                        getClock.playerID = packetToClients.playerID;
 
                         // Request awknowledgement from everyone, but yourself
                         // Go through each remote client	    
@@ -117,7 +117,7 @@ public class Broadcaster extends Thread {
                         }		
                     }
 
-                    packetToClients.lamportClock = requested_lc;
+                    packetToClients.lampClk = requested_lc;
                     debug("lamport clock before " + data.getLamportClock());
 
                 }
@@ -133,7 +133,7 @@ public class Broadcaster extends Thread {
             }
 
 	    // Client doesn't have to add a itself again. Exit right away.
-            if (packetToClients.packet_type == DataPacket.CLIENT_SPAWN) {
+            if (packetToClients.scenarioType == DataPacket.PLAYER_SPAWN) {
                 data.setClockAndIndex(data.getLamportClock() + 1);
                 return;
             }
@@ -141,11 +141,11 @@ public class Broadcaster extends Thread {
         } 
 
 	
-        if(packetToClients.packet_type == DataPacket.CLIENT_REGISTER){
+        if(packetToClients.scenarioType == DataPacket.PLAYER_REGISTER){
             data.acquireSemaphore(outstreams.size());
             return;
-        } else if (packetToClients.packet_type == DataPacket.CLIENT_SPAWN) {	            return;
-        } else if (packetToClients.packet_type == DataPacket.CLIENT_QUIT) {
+        } else if (packetToClients.scenarioType == DataPacket.PLAYER_SPAWN) {	            return;
+        } else if (packetToClients.scenarioType == DataPacket.PLAYER_QUIT) {
 	    data.acquireSemaphore(outstreams.size());
 	    return;
 	}
@@ -162,22 +162,22 @@ public class Broadcaster extends Thread {
 
     private void addEventToOwnQueue(DataPacket packetToSelf) {
         debug("adding own event to queue");
-        if (packetToSelf.packet_type != DataPacket.CLIENT_REGISTER) {
+        if (packetToSelf.scenarioType != DataPacket.PLAYER_REGISTER) {
             DataPacket myEvent = new DataPacket();
-            myEvent.packet_type = packetToSelf.packet_type;
-            myEvent.client_name = packetToSelf.client_name;
-            myEvent.client_id = packetToSelf.client_id;
-            myEvent.lamportClock = packetToSelf.lamportClock;
+            myEvent.scenarioType = packetToSelf.scenarioType;
+            myEvent.playerName = packetToSelf.playerName;
+            myEvent.playerID = packetToSelf.playerID;
+            myEvent.lampClk = packetToSelf.lampClk;
 
-            if (packetToSelf.packet_type == DataPacket.CLIENT_RESPAWN) {
-                myEvent.shooter = packetToSelf.shooter;
-                myEvent.target = packetToSelf.target;
-                myEvent.client_location = packetToSelf.client_location;
-                myEvent.client_direction = packetToSelf.client_direction;
+            if (packetToSelf.scenarioType == DataPacket.PLAYER_RESPAWN) {
+                myEvent.playerFire = packetToSelf.playerFire;
+                myEvent.playerDead = packetToSelf.playerDead;
+                myEvent.playerLocation = packetToSelf.playerLocation;
+                myEvent.playerDirection = packetToSelf.playerDirection;
             }
 
             chandler.addEventToQueue(myEvent);
-            chandler.runEventFromQueue(packetToSelf.lamportClock);
+            chandler.runEventFromQueue(packetToSelf.lampClk);
         }
     }
 

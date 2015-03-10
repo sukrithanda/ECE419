@@ -43,9 +43,9 @@ public class DataPacketManager implements Serializable {
         	print("Player, " + name + ", being re-added.");
         } else {
             DataPacket dp = new DataPacket(); /* Create */
-            dp.client_location = position;
-            dp.client_direction = direction;
-            dp.client_type = type;
+            dp.playerLocation = position;
+            dp.playerDirection = direction;
+            dp.playerType = type;
 
             playerTable.put(name, dp);	/* Insert */
         }

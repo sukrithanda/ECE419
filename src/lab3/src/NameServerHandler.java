@@ -29,20 +29,20 @@ public class NameServerHandler extends Thread {
 				while ( (packetIncoming = (DataPacket) server_in.readObject()) != null) {
 				    DataPacket packetOutgoing = new DataPacket();
 				    
-				    if(packetIncoming.packet_type == DataPacket.LOOKUP_REGISTER) {
+				    if(packetIncoming.scenarioType == DataPacket.NS_REGISTER) {
 				        System.out.println("From Client: LOOKUP_REGISTER ");
 
-				        packetOutgoing.packet_type = DataPacket.LOOKUP_REGISTER;
+				        packetOutgoing.scenarioType = DataPacket.NS_REGISTER;
 				        
 				        System.out.println("NameServer is registering new client.");
-				        System.out.println("IP: " + packetIncoming.client_host + " Port: " + packetIncoming.client_port);
+				        System.out.println("IP: " + packetIncoming.hostName + " Port: " + packetIncoming.portNum);
 
 				        
 				        int portinuse = 0;
 				        for(Entry<Integer, DataPacket> entry: clientHash.entrySet()) {
-				        	if(clientHash.get(Integer.valueOf(entry.getKey().toString())).client_port == packetIncoming.client_port){
+				        	if(clientHash.get(Integer.valueOf(entry.getKey().toString())).portNum == packetIncoming.portNum){
 				        		System.out.println("ERROR: port already in use ");
-				        		packetOutgoing.error_code = DataPacket.ERROR_LOOKUP_PORT;
+				        		packetOutgoing.errType = DataPacket.ERR_RESERVED_NS_PORT;
 				        		server_out.writeObject(packetOutgoing);
 				        		portinuse = 1;
 				        		break;
@@ -67,11 +67,11 @@ public class NameServerHandler extends Thread {
 
         
 				        System.out.println("To Client: registration  success ");
-				        packetOutgoing.client_id = newID;
-				        packetOutgoing.error_code = 0;
+				        packetOutgoing.playerID = newID;
+				        packetOutgoing.errType = 0;
 
-				        packetOutgoing.NameServerTable = new ConcurrentHashMap<Integer, DataPacket>();
-				        packetOutgoing.NameServerTable = clientHash;
+				        packetOutgoing.NSTable = new ConcurrentHashMap<Integer, DataPacket>();
+				        packetOutgoing.NSTable = clientHash;
 
 				        server_out.writeObject(packetOutgoing);
 				        continue;
@@ -79,12 +79,12 @@ public class NameServerHandler extends Thread {
 
 
 				    /* CLIENT_QUIT */
-				    if (packetIncoming.packet_type == DataPacket.LOOKUP_QUIT) {
-				        packetOutgoing.packet_type = DataPacket.LOOKUP_REPLY;
+				    if (packetIncoming.scenarioType == DataPacket.NS_QUIT) {
+				        packetOutgoing.scenarioType = DataPacket.NS_RESPONSE;
 
 				        System.out.println("From Client: CLIENT_QUIT ");
 
-				        clientHash.remove(packetIncoming.client_id);
+				        clientHash.remove(packetIncoming.playerID);
 
 				        System.out.println("To Client: Removed from naming service.");
 				        server_out.writeObject(packetOutgoing);

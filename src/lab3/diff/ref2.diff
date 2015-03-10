@@ -1,7 +1,6 @@
 New FILES:
 
-MazePacket.java      --DataPacket.java
-MazeEvent.java       -- ClientConnectInfo.java
+MazePacket.java      --DataPacket.java -Babneet -Removed dead variables and changed completely
 
 Dispatcher.java    --Broadcaster.java
 ListenerData.java   -- DataPacketManager.java
@@ -14,6 +13,7 @@ Lookup.java          --NameServer.java -Sukrit  -variables changed
 
 Removed Files: 
 
+MazeEvent.java       -- ClientConnectInfo.java - REMOVED not needed
 MazewarServerHandlerThread.java --NOT USED - REMOVED
 MazewarServer.java              --NOokayT USED - REMOVED
 ServerData.java             --NOT USED - REMOVED
@@ -31,7 +31,7 @@ Makefile differ
 Makefile.dep differ
 MazeImpl.java differ
 Maze.java differ
-Mazewar.java differ
+Mazewar.java differ -Babneet -Removed dead variables
 OverheadMazePanel.java differ
 Projectile.java differ
 ScoreTableModel.java differ

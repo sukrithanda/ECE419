@@ -43,7 +43,7 @@ import javax.swing.JTextPane;
 
 public class Mazewar extends JFrame {
 
-    /**
+	/**
      * The default width of the {@link Maze}.
      */
     private final int mazeWidth = 5; 
@@ -81,18 +81,6 @@ public class Mazewar extends JFrame {
      */
     private JTable scoreTable = null;
 
-    /* DEBUG FLAG */
-    boolean debug = true;
-
-    /* ADDING - network resources */
-    Socket mwsSocket = null;
-    ObjectOutputStream out = null; 
-    ObjectInputStream in = null;
-
-    /* ADDING - game data */
-    BlockingQueue<ClientConnectInfo> eventQueue;
-    ConcurrentHashMap<String, Point> clientTable;
-
     /** 
      * Create the textpane statically so that we can 
      * write to it globally using
@@ -127,12 +115,17 @@ public class Mazewar extends JFrame {
      * Static method for performing cleanup before exiting the game.
      */
     public static void quit() {
-        // Put any network clean-up code you might have here.
-        // (inform other implementations on the network that you have 
-        //  left, etc.)
-
-
         System.exit(0);
+    }
+    
+    /**
+     * Debug 
+     */
+    boolean debug = true;
+    private void print(String message) {
+        if (debug) {
+            System.out.println("DEBUG: (Mazewar) " + message);
+        }
     }
 
     /** 
@@ -177,25 +170,25 @@ public class Mazewar extends JFrame {
         int lookup_port = Integer.parseInt(lookup_portStr);
 
         // Connect to naming service
-        debug("creating client handler");
+        print("creating client handler");
         ClientHandlerThread clientHandler = new ClientHandlerThread(host, lookup_port,client_port, scoreModel);
         maze.addClientHandler(clientHandler);
 
         // One lock to be used by all processes in this computer
-        debug("creating lock");
+        print("creating lock");
         Lock lock = new ReentrantLock();
         maze.addLock(lock);
 
         // Create the GUIClient and connect it to the KeyListener queue
-        debug("creating gui client");
+        print("creating gui client");
         guiClient = new GUIClient(name);
-        debug("adding gui client to chandler");
+        print("adding gui client to chandler");
         guiClient.addClientHandler(clientHandler);
 
         // Register to lookup
-        debug("registering with maze");
+        print("registering with maze");
         clientHandler.registerMaze(maze);
-        debug(String.format("registering with lookup on port %d", client_port));
+        print(String.format("registering with lookup on port %d", client_port));
         clientHandler.registerClientWithLookup(client_port, name);
 
         clientHandler.me = guiClient;
@@ -262,7 +255,7 @@ public class Mazewar extends JFrame {
         setVisible(true);
         overheadPanel.repaint();
         this.requestFocusInWindow();
-	clientHandler.start();
+        clientHandler.start();
         clientHandler.broadcastNewClientLocation();
     }
 
@@ -276,12 +269,4 @@ public class Mazewar extends JFrame {
         /* Create the GUI */
         new Mazewar();
     }
-
-    private void debug(String s) {
-        if (debug) {
-            System.out.println("MAZEWAR: " + s);
-        }
-    }
-
-
 }

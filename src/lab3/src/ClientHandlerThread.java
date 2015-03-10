@@ -83,11 +83,11 @@ public class ClientHandlerThread extends Thread {
 
         try{
             // Register self
-            packetToLookup.packet_type = DataPacket.LOOKUP_REGISTER;
-            packetToLookup.client_type = DataPacket.REMOTE;
-            packetToLookup.client_name = name;
-            packetToLookup.client_host = InetAddress.getLocalHost().getHostName();
-            packetToLookup.client_port = client_port;
+            packetToLookup.scenarioType = DataPacket.NS_REGISTER;
+            packetToLookup.playerType = DataPacket.PLAYER_REMOTE;
+            packetToLookup.playerName = name;
+            packetToLookup.hostName = InetAddress.getLocalHost().getHostName();
+            packetToLookup.portNum = client_port;
 
             out.writeObject(packetToLookup);
 
@@ -109,11 +109,11 @@ public class ClientHandlerThread extends Thread {
             /* Initialize handshaking with listener */
             Random rand = new Random();
 
-            packetToLookup.packet_type = DataPacket.CLIENT_REGISTER;
-            packetToLookup.client_name = me.getName();
-            packetToLookup.client_location = maze.getClientPoint(name);
-            packetToLookup.client_direction = me.getOrientation();
-            packetToLookup.client_type = DataPacket.REMOTE;
+            packetToLookup.scenarioType = DataPacket.PLAYER_REGISTER;
+            packetToLookup.playerName = me.getName();
+            packetToLookup.playerLocation = maze.getClientPoint(name);
+            packetToLookup.playerDirection = me.getOrientation();
+            packetToLookup.playerType = DataPacket.PLAYER_REMOTE;
             System.out.println("CLIENT REGISTER: " + me.getName());
             out.writeObject(packetToLookup);
 
@@ -132,10 +132,10 @@ public class ClientHandlerThread extends Thread {
 
         DataPacket packetToClients = new DataPacket();
 
-        packetToClients.packet_type = DataPacket.CLIENT_REGISTER;
-        packetToClients.client_id = myId; 
-        packetToClients.client_host = lookupTable.get(myId).client_host;
-        packetToClients.client_port = lookupTable.get(myId).client_port;  
+        packetToClients.scenarioType = DataPacket.PLAYER_REGISTER;
+        packetToClients.playerID = myId; 
+        packetToClients.hostName = lookupTable.get(myId).hostName;
+        packetToClients.portNum = lookupTable.get(myId).portNum;  
 
         dispatcher.send(packetToClients);
     }
@@ -146,14 +146,14 @@ public class ClientHandlerThread extends Thread {
 
         DataPacket packetToClients = new DataPacket();
 
-        packetToClients.packet_type = DataPacket.CLIENT_SPAWN;
-        packetToClients.for_new_client = false;
-        packetToClients.client_id = myId;
-        packetToClients.NameServerTable = new ConcurrentHashMap();
-        packetToClients.NameServerTable.put(myId,getMe());
+        packetToClients.scenarioType = DataPacket.PLAYER_SPAWN;
+        packetToClients.newPlayer = false;
+        packetToClients.playerID = myId;
+        packetToClients.NSTable = new ConcurrentHashMap();
+        packetToClients.NSTable.put(myId,getMe());
 
-        cd.c = me;
-        cd.c.setId(myId);
+        cd.player = me;
+        cd.player.setId(myId);
         lookupTable.put(myId,cd);
 
         dispatcher.send(packetToClients);
@@ -163,16 +163,16 @@ public class ClientHandlerThread extends Thread {
     // Check if registration successful
     private void lookupRegisterEvent(){
     	// Check if there is an error
-    	if(packetFromLookup.error_code == DataPacket.ERROR_LOOKUP_PORT){
+    	if(packetFromLookup.errType == DataPacket.ERR_RESERVED_NS_PORT){
     		System.out.println("Try a different port!");
     		Mazewar.quit();
     	}
     	
         // Get the current lookup table
         lookupTable = new ConcurrentHashMap<Integer, DataPacket>();
-        lookupTable = packetFromLookup.NameServerTable;
+        lookupTable = packetFromLookup.NSTable;
 
-        myId = packetFromLookup.client_id;
+        myId = packetFromLookup.playerID;
         //data.addSocketOutToList(myId, out);
 
         // Connect to all currently existing users
@@ -190,8 +190,8 @@ public class ClientHandlerThread extends Thread {
                 System.out.println("Adding client " + key);
 
                 DataPacket client_data = lookupTable.get(key);
-                String client_host = client_data.client_host;
-                int client_port = client_data.client_port;
+                String client_host = client_data.hostName;
+                int client_port = client_data.portNum;
 
                 Socket socket = null;
                 ObjectOutputStream t_out = null;
@@ -224,25 +224,25 @@ public class ClientHandlerThread extends Thread {
     //Remove the client that is quitting.
     private void clientQuitEvent(){	
         System.out.println("Remove quitting client");
-	Client c = (lookupTable.get(packetFromClient.client_id)).c;
+	Client c = (lookupTable.get(packetFromClient.playerID)).player;
             maze.removeClient(c);
 	    
     }
 
     private void clientRespawnEvent(){
-        Integer t_id = packetFromClient.target;
-        Integer s_id = packetFromClient.shooter;
+        Integer t_id = packetFromClient.playerDead;
+        Integer s_id = packetFromClient.playerFire;
         debug("in clientRespawnEvent(), shooter is " +  s_id + ", respawnning target " + t_id);
 
         if (lookupTable.containsKey(t_id)){
-            Client tc = (lookupTable.get(t_id)).c;
+            Client tc = (lookupTable.get(t_id)).player;
             //tc.getLock();
 
-            Client sc = (lookupTable.get(s_id)).c;
+            Client sc = (lookupTable.get(s_id)).player;
             sc.getLock();
 
-            Point p = packetFromClient.client_location;
-            Direction d = packetFromClient.client_direction;
+            Point p = packetFromClient.playerLocation;
+            Direction d = packetFromClient.playerDirection;
 
             maze.setClient(sc, tc, p,d);
 
@@ -252,25 +252,25 @@ public class ClientHandlerThread extends Thread {
             sc.releaseLock();
 
         } else {
-            System.out.println("CLIENT: no client with id " +packetFromClient.client_id+ " in respawn");
+            System.out.println("CLIENT: no client with id " +packetFromClient.playerID+ " in respawn");
         }
     }
 
 
     public void clientRespawnEvent(DataPacket packetFromClient){
-        Integer t_id = packetFromClient.target;
-        Integer s_id = packetFromClient.shooter;
+        Integer t_id = packetFromClient.playerDead;
+        Integer s_id = packetFromClient.playerFire;
         debug("in clientRespawnEvent(), shooter is " +  s_id + ", respawnning target " + t_id);
 
         if (lookupTable.containsKey(t_id)){
-            Client tc = (lookupTable.get(t_id)).c;
+            Client tc = (lookupTable.get(t_id)).player;
             //tc.getLock();
 
-            Client sc = (lookupTable.get(s_id)).c;
+            Client sc = (lookupTable.get(s_id)).player;
             sc.getLock();
 
-            Point p = packetFromClient.client_location;
-            Direction d = packetFromClient.client_direction;
+            Point p = packetFromClient.playerLocation;
+            Direction d = packetFromClient.playerDirection;
 
             maze.setClient(sc, tc, p,d);
 
@@ -280,7 +280,7 @@ public class ClientHandlerThread extends Thread {
 	    sc.releaseLock();
 
         } else {
-            System.out.println("CLIENT: no client with id " +packetFromClient.client_id+ " in respawn");
+            System.out.println("CLIENT: no client with id " +packetFromClient.playerID+ " in respawn");
         }
     }
 
@@ -288,8 +288,8 @@ public class ClientHandlerThread extends Thread {
      * Process listener packet eventsi
      * */
     private void addClientEvent() {
-        String name = packetFromLookup.client_name;
-        ConcurrentHashMap<String, DataPacket> clientTableFromLookup = packetFromLookup.client_list;
+        String name = packetFromLookup.playerName;
+        ConcurrentHashMap<String, DataPacket> clientTableFromLookup = packetFromLookup.playerList;
         System.out.println("CLIENT: Lookup sent addClient event");
 
         if (name.equals(me.getName())) {
@@ -297,16 +297,16 @@ public class ClientHandlerThread extends Thread {
         }
         else {
             System.out.println("CLIENT: Lookup adding new client " + name);
-            int clientType = packetFromLookup.client_type;
+            int clientType = packetFromLookup.playerType;
 
             switch (clientType) {
-                case DataPacket.REMOTE:
+                case DataPacket.PLAYER_REMOTE:
                     //add remote client
                     RemoteClient c = new RemoteClient(name);
                     clientTable.put(name, c);
-                    maze.addRemoteClient(c, packetFromLookup.client_location, packetFromLookup.client_direction);
+                    maze.addRemoteClient(c, packetFromLookup.playerLocation, packetFromLookup.playerDirection);
                     break;
-                case DataPacket.ROBOT:
+                case DataPacket.PLAYER_ROBOT:
                     //add robot client
                     break;
                 default:
@@ -315,7 +315,7 @@ public class ClientHandlerThread extends Thread {
             }
         }
 
-        seqNum = packetFromLookup.sequence_num;
+        seqNum = packetFromLookup.orderVal;
 
         // else listener is telling you to add a new client
         // create new clients into clientTable based on any
@@ -326,14 +326,14 @@ public class ClientHandlerThread extends Thread {
             if (!clientTable.containsKey(key)) {
                 DataPacket cData = entry.getValue();
 
-                switch (cData.client_type) {
-                    case DataPacket.REMOTE:
+                switch (cData.playerType) {
+                    case DataPacket.PLAYER_REMOTE:
                         //add remote client
                         RemoteClient c = new RemoteClient(key);
                         clientTable.put(key, c);
-                        maze.addRemoteClient(c, cData.client_location, cData.client_direction);
+                        maze.addRemoteClient(c, cData.playerLocation, cData.playerDirection);
                         break;
-                    case DataPacket.ROBOT:
+                    case DataPacket.PLAYER_ROBOT:
                         //add robot client
                         break;
                     default:
@@ -347,7 +347,7 @@ public class ClientHandlerThread extends Thread {
         if (!c.isKilled()) { 
             c.forward();
         } else {
-            System.out.println("CLIENT: no client " +packetFromClient.client_id+ " in forward");
+            System.out.println("CLIENT: no client " +packetFromClient.playerID+ " in forward");
         }
     }
 
@@ -355,7 +355,7 @@ public class ClientHandlerThread extends Thread {
         if (!c.isKilled()) { 
             c.backup();
         } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.client_id+ " in backup");
+            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in backup");
         }
     }
 
@@ -363,7 +363,7 @@ public class ClientHandlerThread extends Thread {
         if (!c.isKilled()) { 
             c.turnLeft();
         } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.client_id+ " in left");
+            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in left");
         }
     }
 
@@ -371,7 +371,7 @@ public class ClientHandlerThread extends Thread {
         if (!c.isKilled()) { 
             c.turnRight();
         } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.client_id+ " in right");
+            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in right");
         }
     }
 
@@ -383,7 +383,7 @@ public class ClientHandlerThread extends Thread {
             //scoreTable.clientFired(clientTable.get(name));
 
         } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.client_id+ " in fire");
+            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in fire");
         }
     }
 
@@ -400,8 +400,8 @@ public class ClientHandlerThread extends Thread {
             try{
 				// Send to other clients you are quitting
 				DataPacket packetToClients = new DataPacket();
-				packetToClients.packet_type = DataPacket.CLIENT_QUIT;
-				packetToClients.client_id = myId;
+				packetToClients.scenarioType = DataPacket.PLAYER_QUIT;
+				packetToClients.playerID = myId;
 				dispatcher.send(packetToClients);
 		
 				// Don't exit until you have recieved all acknowledgements
@@ -409,8 +409,8 @@ public class ClientHandlerThread extends Thread {
 		
 				// Send lookup that you are quitting
 				DataPacket packetToLookup = new DataPacket();
-				packetToLookup.packet_type = DataPacket.LOOKUP_QUIT;
-				packetToLookup.client_id = myId;
+				packetToLookup.scenarioType = DataPacket.NS_QUIT;
+				packetToLookup.playerID = myId;
 				out.writeObject(packetToLookup);
 				System.out.println("Client quit from lookup.");
 		
@@ -431,31 +431,31 @@ public class ClientHandlerThread extends Thread {
             Mazewar.quit();
             // Up-arrow moves forward.
         } else if(e.getKeyCode() == KeyEvent.VK_UP && !me.isKilled()) {
-            sendPacketToClients(DataPacket.CLIENT_FORWARD);
+            sendPacketToClients(DataPacket.PLAYER_FORWARD);
             // Down-arrow moves backward.
         } else if(e.getKeyCode() == KeyEvent.VK_DOWN && !me.isKilled()) {
-            sendPacketToClients(DataPacket.CLIENT_BACK);
+            sendPacketToClients(DataPacket.PLAYER_BACK);
             //backup();
             // Left-arrow turns left.
         } else if(e.getKeyCode() == KeyEvent.VK_LEFT && !me.isKilled()) {
-            sendPacketToClients(DataPacket.CLIENT_LEFT);
+            sendPacketToClients(DataPacket.PLAYER_LEFT);
             //turnLeft();
             // Right-arrow turns right.
         } else if(e.getKeyCode() == KeyEvent.VK_RIGHT && !me.isKilled()) {
-            sendPacketToClients(DataPacket.CLIENT_RIGHT);
+            sendPacketToClients(DataPacket.PLAYER_RIGHT);
             //turnRight();
             // Spacebar fires.
         } else if(e.getKeyCode() == KeyEvent.VK_SPACE && !me.isKilled()) {
-            sendPacketToClients(DataPacket.CLIENT_FIRE);
+            sendPacketToClients(DataPacket.PLAYER_FIRE);
             //fire();
         }
     }
 
     private void sendPacketToClients(int packetType) {
         DataPacket packetToClients = new DataPacket();
-        packetToClients.packet_type = packetType;
-        packetToClients.client_name = me.getName();
-        packetToClients.client_id = myId;
+        packetToClients.scenarioType = packetType;
+        packetToClients.playerName = me.getName();
+        packetToClients.playerID = myId;
 
         dispatcher.send(packetToClients);  
     }
@@ -504,17 +504,17 @@ public class ClientHandlerThread extends Thread {
         debug("I just died. in sendClientRespawn");
         debug(String.format("in sendClientRespawnEvent, params: %d %d", sc, tc));
         DataPacket respawnPacket = new DataPacket();
-        respawnPacket.client_id = myId;
-        respawnPacket.packet_type = DataPacket.CLIENT_RESPAWN;
-        respawnPacket.shooter = sc;
-        respawnPacket.target = tc;
-        respawnPacket.client_location = p;
-        respawnPacket.client_direction = d;
+        respawnPacket.playerID = myId;
+        respawnPacket.scenarioType = DataPacket.PLAYER_RESPAWN;
+        respawnPacket.playerFire = sc;
+        respawnPacket.playerDead = tc;
+        respawnPacket.playerLocation = p;
+        respawnPacket.playerDirection = d;
         dispatcher.send(respawnPacket);
     }
 
     public int getMyScore(){
-    	return scoreModel.getScore(lookupTable.get(myId).c);
+    	return scoreModel.getScore(lookupTable.get(myId).player);
     }
 
     public void spawnClient(Integer id, ConcurrentHashMap<Integer,DataPacket> tuple, int score){
@@ -522,41 +522,41 @@ public class ClientHandlerThread extends Thread {
         cd = tuple.get(id);
 
         // Spawn client	
-        RemoteClient c = new RemoteClient(cd.client_name);
-        maze.addRemoteClient(c, cd.client_location, cd.client_direction);
+        RemoteClient c = new RemoteClient(cd.playerName);
+        maze.addRemoteClient(c, cd.playerLocation, cd.playerDirection);
 
 		// Update score
 		scoreModel.setScore(c,score);
 
         // Update tuple
-        cd.c = c;
-        cd.c.setId(id);
+        cd.player = c;
+        cd.player.setId(id);
         lookupTable.put(id, cd);
     }
 
     public void spawnClient(){
-        Integer id = packetFromClient.client_id;
-        ConcurrentHashMap<Integer,DataPacket> tuple = packetFromClient.NameServerTable;
+        Integer id = packetFromClient.playerID;
+        ConcurrentHashMap<Integer,DataPacket> tuple = packetFromClient.NSTable;
 
         DataPacket cd = new DataPacket();
         cd = tuple.get(id);
 
         // Spawn client	
-        RemoteClient c = new RemoteClient(cd.client_name);
-        maze.addRemoteClient(c, cd.client_location, cd.client_direction);
+        RemoteClient c = new RemoteClient(cd.playerName);
+        maze.addRemoteClient(c, cd.playerLocation, cd.playerDirection);
 
         // Update tuple
-        cd.c = c;
-        cd.c.setId(id);
+        cd.player = c;
+        cd.player.setId(id);
         lookupTable.put(id, cd);
     }
 
     public DataPacket getMe() {
         DataPacket DataPacket = new DataPacket();
-        DataPacket.client_id = myId;
-        DataPacket.client_name = me.getName();
-        DataPacket.client_location = maze.getClientPoint(me);
-        DataPacket.client_direction = me.getOrientation();
+        DataPacket.playerID = myId;
+        DataPacket.playerName = me.getName();
+        DataPacket.playerLocation = maze.getClientPoint(me);
+        DataPacket.playerDirection = me.getOrientation();
         return DataPacket;
     }
 
@@ -565,8 +565,8 @@ public class ClientHandlerThread extends Thread {
     }
 
     public void addEventToQueue(DataPacket p) {
-        System.out.println("CHANDLER: Saving event at index: " + p.lamportClock);
-        eventQueue[p.lamportClock] =  p;
+        System.out.println("CHANDLER: Saving event at index: " + p.lampClk);
+        eventQueue[p.lampClk] =  p;
     }
 
     public void runEventFromQueue(Integer lc){
@@ -582,9 +582,9 @@ public class ClientHandlerThread extends Thread {
                 eventQueue[lc] = null;
 
                 Client c = null;
-                if(packetFromClient.packet_type != DataPacket.CLIENT_SPAWN)
-                	if(packetFromClient.packet_type != DataPacket.CLIENT_QUIT)
-                		c = (lookupTable.get(packetFromClient.client_id)).c;
+                if(packetFromClient.scenarioType != DataPacket.PLAYER_SPAWN)
+                	if(packetFromClient.scenarioType != DataPacket.PLAYER_QUIT)
+                		c = (lookupTable.get(packetFromClient.playerID)).player;
 
                 executed = executeEvent(c);
                 if (!executed) break;
@@ -606,47 +606,47 @@ public class ClientHandlerThread extends Thread {
         if(c != null)
             c.getLock();		
 
-        int type = packetFromClient.packet_type;
+        int type = packetFromClient.scenarioType;
         
-        if (DataPacket.CLIENT_LEFT == type) {
+        if (DataPacket.PLAYER_LEFT == type) {
         	
         	clientLeftEvent(c);
         	
-        } else if (DataPacket.CLIENT_RIGHT == type) {
+        } else if (DataPacket.PLAYER_RIGHT == type) {
         	
         	clientRightEvent(c);
         	
-        } else if (DataPacket.CLIENT_BACK == type) {
+        } else if (DataPacket.PLAYER_BACK == type) {
         	
         	clientBackEvent(c);
         	
-        } else if (DataPacket.CLIENT_FORWARD == type) {
+        } else if (DataPacket.PLAYER_FORWARD == type) {
         	
         	clientForwardEvent(c);
         	
-        } else if (DataPacket.CLIENT_SPAWN == type) {
+        } else if (DataPacket.PLAYER_SPAWN == type) {
         	
         	spawnClient();
         	
-        } else if (DataPacket.CLIENT_RESPAWN == type) {
+        } else if (DataPacket.PLAYER_RESPAWN == type) {
         	
         	clientRespawnEvent();
         	
-        } else if (DataPacket.CLIENT_FIRE == type) {
+        } else if (DataPacket.PLAYER_FIRE == type) {
         	
         	clientFireEvent(c);
         	
-        } else if (DataPacket.CLIENT_REGISTER == type) {
+        } else if (DataPacket.PLAYER_REGISTER == type) {
         	
         	addClientEvent();
         	
-        } else if (DataPacket.CLIENT_QUIT == type) {
+        } else if (DataPacket.PLAYER_QUIT == type) {
         	
         	clientQuitEvent();
         	
         } else {
             status = false;
-            System.out.println("ERROR: UNKNOWN PACKET TYPE" + packetFromClient.packet_type);
+            System.out.println("ERROR: UNKNOWN PACKET TYPE" + packetFromClient.scenarioType);
         }
 
         if(c != null)
