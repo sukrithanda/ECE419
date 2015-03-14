@@ -15,7 +15,7 @@ public class ClientRecieverThread extends Thread {
     ObjectInputStream inStream;
     ObjectOutputStream outStream;
     
-    ClientHandlerThread clientHandler;
+    MazewarP2PHandler clientHandler;
     Broadcaster broadcaster;
     int laportCLK;
 
@@ -25,7 +25,7 @@ public class ClientRecieverThread extends Thread {
     boolean kill = false;
     boolean DEBUG = true;
 
-    public ClientRecieverThread (ClientHandlerThread clientHandler, Socket socket, 
+    public ClientRecieverThread (MazewarP2PHandler clientHandler, Socket socket, 
     		DataPacketManager listener, Broadcaster broadcaster) throws IOException {
         try {
         	print("Starting");
@@ -52,24 +52,24 @@ public class ClientRecieverThread extends Thread {
                        // clientClock();
                         int requested_lc = packetIn.lampClk;    
                         dataPacket.scenarioType = DataPacket.PLAYER_ACK;
-                        packetManager.acquireLock();
+                        packetManager.acqLock();
 
-                        print("requested_lc: " + requested_lc + " current lamportClock: " + packetManager.getLamportClock());
-                        dataPacket.lampClk = packetManager.getLamportClock();
+                        print("requested_lc: " + requested_lc + " current lamportClock: " + packetManager.getLampClk());
+                        dataPacket.lampClk = packetManager.getLampClk();
 
                         if(requested_lc >= laportCLK){
                             print("incrementing my lc after recieving CLIENT_CLOCK packet");
                             // Clock is valid!
                             if(requested_lc == 19){
-                            	packetManager.setLamportClock(0);
+                            	packetManager.initLampClk(0);
                             } else {
-                            	packetManager.setLamportClock(++requested_lc);
+                            	packetManager.initLampClk(++requested_lc);
                             }
                             //Set up and send awknowledgement packet
                             //eventPacket.lamportClock = lamportClock;]
                             dataPacket.clkCredible = true;
 
-                            print("Incremented lc is " + packetManager.getLamportClock());
+                            print("Incremented lc is " + packetManager.getLampClk());
 
                         } else{
                             // Oh no! The lamport clock is not valid.
@@ -80,7 +80,7 @@ public class ClientRecieverThread extends Thread {
                         print("Clock is " + dataPacket.clkCredible + " with timestamp " + dataPacket.lampClk);
 
                         packetManager.freeLock();
-                        broadcaster.sendToClient(packetIn.playerID, (DataPacket) dataPacket);
+                        broadcaster.peerSend((DataPacket) dataPacket, packetIn.playerID);
                         break;
                     case DataPacket.PLAYER_ACK:
                        // clientAck();
@@ -90,7 +90,7 @@ public class ClientRecieverThread extends Thread {
                         if(!clockIsValid){
                             // Update the current lamport clock
                             print("Awknowledgement failed. LC set to: " +  packetIn.lampClk);
-                            packetManager.setClockAndIndex(packetIn.lampClk);
+                            packetManager.setLampClkIndex(packetIn.lampClk);
                         }
 
                         packetManager.freeSemaphore(1);
@@ -105,7 +105,7 @@ public class ClientRecieverThread extends Thread {
 
                             /* Add to client list */
                             dataPacket = setup(dataPacket, clientHandler.getMyId(), DataPacket.PLAYER_SPAWN, 
-                            		packetManager.getLamportClock());
+                            		packetManager.getLampClk());
                             dataPacket.newPlayer = true;
                             dataPacket.NSTable = new ConcurrentHashMap();
                             dataPacket.NSTable.put(clientHandler.getMyId(), clientHandler.getMe());
@@ -115,10 +115,10 @@ public class ClientRecieverThread extends Thread {
                             String hostname = packetIn.hostName;
                             Integer id = packetIn.playerID;
                             int port = packetIn.portNum;
-                            broadcaster.connectToPeer(id, hostname, port);
+                            broadcaster.peerConnection(hostname, port, id);
 
                             /* Add packet to event queue */
-                            broadcaster.sendToClient(id,dataPacket);
+                            broadcaster.peerSend(dataPacket,id);
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -129,8 +129,8 @@ public class ClientRecieverThread extends Thread {
                         if (packetIn.newPlayer) {
 
                             // Update to the latest lamport clock
-                            if(packetManager.getLamportClock() < packetIn.lampClk)
-                            		packetManager.setClockAndIndex(packetIn.lampClk);
+                            if(packetManager.getLampClk() < packetIn.lampClk)
+                            		packetManager.setLampClkIndex(packetIn.lampClk);
                 	    
 
                             clientHandler.spawnClient(packetIn.playerID,packetIn.NSTable, packetIn.playerScore);
@@ -231,7 +231,7 @@ public class ClientRecieverThread extends Thread {
                         DataPacket listenerResponse = new DataPacket();
                         listenerResponse.scenarioType = DataPacket.PLAYER_SECURE_LOCATION; 	    
 
-                        if(packetManager.setPosition(remoteClientName,remoteClientLocation)){
+                        if(packetManager.recordPlayerOp(remoteClientLocation,remoteClientName)){
                             listenerResponse.errType = 0;
                             print("reserving position successful. " + remoteClientName );
                         }else{	
@@ -263,8 +263,8 @@ public class ClientRecieverThread extends Thread {
                     		dataPacket = setup(dataPacket, packetIn.playerID,
                     				DataPacket.PLAYER_FREE_SEMAPHORE, packetIn.lampClk);
 	                    
-	                	    broadcaster.sendToClient(packetIn.playerID, dataPacket);
-                            packetManager.removeSocketOutFromList(packetIn.playerID);
+	                	    broadcaster.peerSend(dataPacket, packetIn.playerID);
+                            packetManager.deleteOutputStream(packetIn.playerID);
 	
                             // Close all connections!
                             inStream.close();

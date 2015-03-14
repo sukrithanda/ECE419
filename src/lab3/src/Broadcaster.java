@@ -1,192 +1,148 @@
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-/* Dispatcher class
- * Dispatches messages from event queue and broadcasts
- * events to all remote clients.
- *
+/**
+ * Broadcaster - Handles message sending to peers
  */
+
 public class Broadcaster extends Thread {
-    LinkedBlockingQueue<DataPacket> movesQ = null;
-    ConcurrentHashMap<String, DataPacket> clients= null;
-    ConcurrentHashMap<Integer, ObjectOutputStream> outstreams = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
-    int seqNum;
 
-    int LCLK;
-    Semaphore sem;
-    DataPacketManager data;
-    ClientHandlerThread chandler;
+    public Broadcaster(DataPacketManager manager, MazewarP2PHandler peerHandler) {
+        this.outgoing = manager.outputMessageStreams;
+        this.peerHandler = peerHandler;
+        this.manager = manager;
+    }
 
-    Lock lock = new ReentrantLock();
+    DataPacketManager manager;
+    MazewarP2PHandler peerHandler;
 
+    ConcurrentHashMap<Integer, ObjectOutputStream> outgoing = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
+    
     boolean debug = true;
 
-    public Broadcaster(DataPacketManager data, ClientHandlerThread chandler) {
-        this.data = data;
-        this.chandler = chandler;
-        this.movesQ = data.gameMoves;
-        this.clients = data.playerTable;
-        this.outstreams = data.socketOutList;
-        this.sem = data.semaphore;
+    public void print(String str) {
+        if (debug) {
+            System.out.println("DEBUG: (Broadcaster) " + str);
+        }
     }
-
-    public void connectToPeer(Integer id, String host, int port) {
+    
+    /* Establish connection with peer */
+    public void peerConnection(String hostName, int portNum, Integer id) { 
         Socket socket = null;
-        ObjectOutputStream t_out = null;
-
-        // Save socket out!
         try{
-            socket = new Socket(host, port);
-
-            t_out = new ObjectOutputStream(socket.getOutputStream());
-            data.addSocketOutToList(id, t_out);
+            socket = new Socket(hostName, portNum);
+            manager.addOutputStream(new ObjectOutputStream(socket.getOutputStream()), id);
         } catch(Exception e){
-            System.err.println("ERROR: Coudn't connect to currently existing client");
+        	print("Unable to connect peer " + hostName);
         }				    
     }
+    
+    /* Store operation for local player */
+    private void recordPlayerOperation(DataPacket dpIn) { 
+        if (dpIn.scenarioType != DataPacket.PLAYER_REGISTER) {
+            DataPacket dpOut = new DataPacket();
+            
+            if (dpIn.scenarioType == DataPacket.PLAYER_RESPAWN) {
+                dpOut.playerFire = dpIn.playerFire;
+                dpOut.playerLocation = dpIn.playerLocation;
+                dpOut.playerDirection = dpIn.playerDirection;
+                dpOut.playerDead = dpIn.playerDead;
+            }
+            
+            dpOut.scenarioType = dpIn.scenarioType;
+            dpOut.playerID = dpIn.playerID;
+            dpOut.playerName = dpIn.playerName;
+            dpOut.lampClk = dpIn.lampClk;
 
-    public void sendToClient(int client_id, DataPacket packetToClient){
+            peerHandler.addEventToQueue(dpOut);
+            peerHandler.runEventFromQueue(dpIn.lampClk);
+        }
+    }
+
+    /* Send message to specific peer */
+    public void peerSend(DataPacket dp, int id){ 
         try{
-            ((ObjectOutputStream)outstreams.get(client_id)).writeObject(packetToClient);
-
-            debug("sending packet "+ packetToClient.scenarioType + ", called client " + client_id);
+        	print("Client ID - " + id + "Packet Type - " + dp.scenarioType);
+            ((ObjectOutputStream)outgoing.get(id)).writeObject(dp);
         } catch (IOException e) {
             e.printStackTrace();
         }  
     }
 
-    public void send(DataPacket packetToClients){
-        // Try and get a valid lamport clock!
-        DataPacket getClock = new DataPacket();
-        packetToClients.lampClk = data.getLamportClock();
+    /* Multicast message to all peers */
+	public void peerSendMulticast(DataPacket dp) {
+		print("Packet Type - " + dp.scenarioType);
+		
+		int curLampClk;
+		DataPacket dpClk = new DataPacket();
+		dp.lampClk = manager.getLampClk();
 
-	// Get timestamp for report
-	Date date = new Date();
-	System.out.println("Current timestamp " + date.getTime());
+		if (dp.scenarioType == DataPacket.PLAYER_RESPAWN) {
+			try {
+				for (ObjectOutputStream out : outgoing.values()) {
+					print("Send RESPAWN message to peers");
+					out.writeObject(dp);
+				}
+				peerHandler.clientRespawnEvent(dp);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return;
+		} else if (outgoing.size() > 0) {
+			try {
+				if (dp.scenarioType != DataPacket.PLAYER_REGISTER) {
+					while (true) {
+						curLampClk = manager.getLampClk();
+						dpClk.scenarioType = DataPacket.PLAYER_CLK;
+						dpClk.lampClk = curLampClk;
+						dpClk.playerID = dp.playerID;
 
+						for (ObjectOutputStream out : outgoing.values()) {
+							print("Current Lamport Clock " + curLampClk);
+							out.writeObject(dpClk); /* Ask players to ACK */
+						} 
 
-	System.out.println("Client want to send out packet type " + packetToClients.scenarioType);
+						manager.acqSemaphore(outgoing.size()); /* Ask players to ACK */
 
-        int requested_lc;
-	if(packetToClients.scenarioType == DataPacket.PLAYER_RESPAWN){
-	    try{
-	    // Go through each remote client	    
-	    	for (ObjectOutputStream out : outstreams.values()) {
-	    		out.writeObject(packetToClients);
-	    		System.out.println("DISPATCHER: Sending our respawn packets to other clients");
-	    	}
-	    	chandler.clientRespawnEvent(packetToClients);
-	    }catch(Exception e){
-            e.printStackTrace();
-	    }
-	    return;
-	} else if(outstreams.size() > 0){
-            try{
-                // Request a lamport clock if there is more than one client.
-		// If packet is for Register, send it to clients right away
-                if(packetToClients.scenarioType != DataPacket.PLAYER_REGISTER){
-                    while(true){
-                        getClock.scenarioType = DataPacket.PLAYER_CLK;
-                        requested_lc = data.getLamportClock();
-                        getClock.lampClk = requested_lc;
-                        getClock.playerID = packetToClients.playerID;
+						if (curLampClk == manager.getLampClk()) { /* Try again if incorrect Lamport clock */
+							break;
+						}
+					}
 
-                        // Request awknowledgement from everyone, but yourself
-                        // Go through each remote client	    
-                        for (ObjectOutputStream out : outstreams.values()) {
-                            out.writeObject(getClock);
-                            debug("Calling client for clock: " + requested_lc);	    
-                        }
+					dp.lampClk = curLampClk;
+					print("LCLK (START) " + manager.getLampClk());
+				}
 
-                        // Wait until all clients have aknowledged!
-                        data.acquireSemaphore(outstreams.size());
+				for (ObjectOutputStream out : outgoing.values()) {
+					out.writeObject(dp);
+				}
 
-                        // You've finally woken up
-                        // Check if the lamport clock is valid
-                        // If lamport clock is the same as before, it is valid
-                        // If it is not, it is invalid and you have to do it all over again
-                        if(requested_lc == data.getLamportClock()){
-                            break;
-                        }		
-                    }
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
-                    packetToClients.lampClk = requested_lc;
-                    debug("lamport clock before " + data.getLamportClock());
+			if (dp.scenarioType == DataPacket.PLAYER_SPAWN) {
+				manager.setLampClkIndex(manager.getLampClk() + 1);
+				return;
+			}
 
-                }
+		}
 
-                // Go through each remote client	    
-                for (ObjectOutputStream out : outstreams.values()) {
-                    out.writeObject(packetToClients);		    
-                }
+		if (dp.scenarioType == DataPacket.PLAYER_REGISTER) {
+			manager.acqSemaphore(outgoing.size());
+			return;
+		} else if (dp.scenarioType == DataPacket.PLAYER_SPAWN) {
+			return;
+		} else if (dp.scenarioType == DataPacket.PLAYER_QUIT) {
+			manager.acqSemaphore(outgoing.size());
+			return;
+		}
 
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-	    // Client doesn't have to add a itself again. Exit right away.
-            if (packetToClients.scenarioType == DataPacket.PLAYER_SPAWN) {
-                data.setClockAndIndex(data.getLamportClock() + 1);
-                return;
-            }
-
-        } 
-
-	
-        if(packetToClients.scenarioType == DataPacket.PLAYER_REGISTER){
-            data.acquireSemaphore(outstreams.size());
-            return;
-        } else if (packetToClients.scenarioType == DataPacket.PLAYER_SPAWN) {	            return;
-        } else if (packetToClients.scenarioType == DataPacket.PLAYER_QUIT) {
-	    data.acquireSemaphore(outstreams.size());
-	    return;
+		recordPlayerOperation(dp);
+		manager.incrLampClk();
+		print("LCLK (End) " + manager.getLampClk());
 	}
-
-        addEventToOwnQueue(packetToClients);
-	
-        data.incrementLamportClock();
-        debug("lamport clock after " + data.getLamportClock());
-
-
-	// Get timestamp for report
-	System.out.println("After timestamp " + date.getTime());
-    }
-
-    private void addEventToOwnQueue(DataPacket packetToSelf) {
-        debug("adding own event to queue");
-        if (packetToSelf.scenarioType != DataPacket.PLAYER_REGISTER) {
-            DataPacket myEvent = new DataPacket();
-            myEvent.scenarioType = packetToSelf.scenarioType;
-            myEvent.playerName = packetToSelf.playerName;
-            myEvent.playerID = packetToSelf.playerID;
-            myEvent.lampClk = packetToSelf.lampClk;
-
-            if (packetToSelf.scenarioType == DataPacket.PLAYER_RESPAWN) {
-                myEvent.playerFire = packetToSelf.playerFire;
-                myEvent.playerDead = packetToSelf.playerDead;
-                myEvent.playerLocation = packetToSelf.playerLocation;
-                myEvent.playerDirection = packetToSelf.playerDirection;
-            }
-
-            chandler.addEventToQueue(myEvent);
-            chandler.runEventFromQueue(packetToSelf.lampClk);
-        }
-    }
-
-    public void debug(String s) {
-        if (debug) {
-            System.out.println("DISPATCHER: " + s);
-        }
-    }
-
-
 }
 

@@ -10,8 +10,8 @@ public class ClientReciever extends Thread{
 	int clientSocketPort;
 	DataPacketManager manager;
     Broadcaster broadcaster;
-    ClientHandlerThread clientHandler;
-    public ClientReciever(ClientHandlerThread clientHandler, int portClient, DataPacketManager listenerData, Broadcaster broadcaster){
+    MazewarP2PHandler clientHandler;
+    public ClientReciever(MazewarP2PHandler clientHandler, int portClient, DataPacketManager listenerData, Broadcaster broadcaster){
 		this.clientSocketPort = portClient;
 		this.manager = listenerData;
 		this.broadcaster = broadcaster;

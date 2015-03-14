@@ -125,7 +125,7 @@ public abstract class Client implements Serializable{
         listenerSet.remove(cl);
     }
 
-    public void addClientHandler(ClientHandlerThread ch) {
+    public void addClientHandler(MazewarP2PHandler ch) {
         this.chandler = ch;
     }
 
@@ -154,7 +154,7 @@ public abstract class Client implements Serializable{
     /**
      * ADDING Client Handler 
      * */
-    ClientHandlerThread chandler = null;
+    MazewarP2PHandler chandler = null;
 
     /**
      * Maintain a set of listeners.

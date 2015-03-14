@@ -171,7 +171,7 @@ public class Mazewar extends JFrame {
 
         // Connect to naming service
         print("creating client handler");
-        ClientHandlerThread clientHandler = new ClientHandlerThread(host, lookup_port,client_port, scoreModel);
+        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port,client_port, scoreModel);
         maze.addClientHandler(clientHandler);
 
         // One lock to be used by all processes in this computer

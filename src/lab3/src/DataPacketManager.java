@@ -6,143 +6,131 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * DataPacketManager - Provides synchronization support for handling data packets
+ */
+
 public class DataPacketManager implements Serializable {
 
-	/* Local Client Information */
-    int clientId;
-    ConcurrentHashMap<String, Point> clientPosition = new ConcurrentHashMap<String, Point>();
-    
-    /* Global Game Information */
-    LinkedBlockingQueue<DataPacket> gameMoves = new LinkedBlockingQueue<DataPacket>();
-    ConcurrentHashMap<String, DataPacket> playerTable = new ConcurrentHashMap<String, DataPacket>();  // TODO: get rid of this old stuff
-    ConcurrentHashMap<Integer, ObjectOutputStream> socketOutList = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
-    ConcurrentHashMap<Integer, DataPacket> lookupTable = new ConcurrentHashMap<Integer, DataPacket>(); // Contains all client data
-
-    int moveIndex = 0;	
-    int LCLK;       // Lamport clock
-    
+    /* Synchronization Support */
     Lock lock = new ReentrantLock();
     Semaphore semaphore = new Semaphore(0); 
-
-    boolean DEBUG = true;
     
-    public void setId(int id){
-        clientId = id;
-    }
+    int orderVal = 0;	
+    int lampClk;
 
-    public int getId(){
-        return clientId; 
-    }
+	/* Local Client Information */
+    int playerID;
+    ConcurrentHashMap<String, Point> playerPositions = new ConcurrentHashMap<String, Point>();
+    
+    /* Global Game Information */
+    ConcurrentHashMap<Integer, ObjectOutputStream> outputMessageStreams = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
+    LinkedBlockingQueue<DataPacket> playerOps = new LinkedBlockingQueue<DataPacket>();
+    
+    boolean debug = true;
 
-    public void addLookupTable(ConcurrentHashMap<Integer, DataPacket> lookupTable){
-        this.lookupTable = lookupTable;
-    }
-
-    public void addClientToTable(String name, Point position, Direction direction, int type) {
-        if (playerTable.containsKey(name)) {
-        	print("Player, " + name + ", being re-added.");
-        } else {
-            DataPacket dp = new DataPacket(); /* Create */
-            dp.playerLocation = position;
-            dp.playerDirection = direction;
-            dp.playerType = type;
-
-            playerTable.put(name, dp);	/* Insert */
+    public void print(String str) {
+        if (debug) {
+            System.out.println("DEBUG: (Broadcaster) " + str);
         }
     }
-
-    public void removeClientFromTable(String name){
-        if(playerTable.containsKey(name)){
-            playerTable.remove(name);
-            clientPosition.remove(name);
-        }
-    }
-
-    public void recordMove(DataPacket event){
-        gameMoves.offer(event);
-    }
-
-    public void addSocketOutToList(Integer key, ObjectOutputStream out) {
-        socketOutList.put(key, out);
-    }
-
-    public void removeSocketOutFromList(Integer key) {
-        socketOutList.remove(key);
-    }
-
-    public boolean setPosition(String name, Point position){
-        if(!clientPosition.containsValue(position)){
-            clientPosition.put(name,position);	  	    
-            return true;
-        }else{
-            Point clientPos = clientPosition.get(name);
-            if(clientPos == position)
+    
+    /* Record/Verify player operation */
+    public boolean recordPlayerOp(Point position, String name) { 
+        if(playerPositions.containsValue(position)){
+            Point playerPosition = playerPositions.get(name);
+            if(playerPosition == position) {
                 return true;
-            else
+            } else {
                 return false;
-        }
-    }
-
-    public void setLamportClock(int value){
-        LCLK = value;
-    }
-
-    public Integer incrementLamportClock() {
-        LCLK++;
-        if(LCLK == 20)
-        	LCLK = 0;
-        return LCLK;
-    }
-
-    public Integer getLamportClock(){
-    	return LCLK;
-    }
-
-    public Integer getMoveIndex(){
-    	return moveIndex;
-    }
-
-    public void setMoveIndex(Integer i){
-    	moveIndex = i;
-    }
-
-
-    public void setClockAndIndex(int value){
-        LCLK = value;	
-        moveIndex = value;
-    }
-
-    public void acquireSemaphore(int index){
-    	print("SEMAPHORE: Acquired - " + semaphore.availablePermits() +  "; Needed - " + index); 
-        try{
-            semaphore.acquire(index);
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-
-    }
-
-    public void freeSemaphore(int index){
-    	print("SEMAPHORE: Free " + index + " semaphore(s)");
-        try{
-            semaphore.release(index);
-        } catch (Exception e){
-            e.printStackTrace();
+            }
+        }else{
+        	playerPositions.put(name,position);	  	    
+            return true;
         }
     }
     
-    public void acquireLock(){
+    /* Add outputMessageStreams */
+    public void addOutputStream(ObjectOutputStream outStream, Integer key) {
+        outputMessageStreams.put(key, outStream);
+    }
+
+    /* Delete from outputMessageStreams */
+    public void deleteOutputStream(Integer key) {
+        outputMessageStreams.remove(key);
+    }
+
+    /* Getter for operation order */
+    public Integer getOpOrder(){
+    	return orderVal;
+    }
+
+    /* Setter for operation order */
+    public void setOpOrder(Integer order){
+    	orderVal = order;
+    }
+
+    /* Setter for Lamport clock and operation order */
+    public void setLampClkIndex(int val){
+    	setOpOrder(val);
+    	initLampClk(val);
+    }
+
+    /* Method to acquire lock */
+    public void acqLock(){
     	lock.lock();
     }
 
+    /* Method to free lock */
     public void freeLock(){
     	lock.unlock();
     }
-
-    //BABNEET - REMOVE
-    private void print(String s) {
-        if (DEBUG) {
-            System.out.println("DEBUG: (DataPacketManager) " + s);
+    
+    /* Method to acquire semaphore */
+    public void acqSemaphore(int order){
+        try{
+            semaphore.acquire(order);
+        } catch (Exception e){
+            e.printStackTrace();
         }
+    	print("SEMAPHORE acquired - " + semaphore.availablePermits() +  "; Needed - " + order); 
+    }
+
+    /* Method to free semaphore */
+    public void freeSemaphore(int order){
+        try{
+            semaphore.release(order);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    	print("SEMAPHORE freed - " + order + " semaphore(s)");
+    }
+    
+    /* Setter for player ID */
+    public void setPlayerID(int id){
+        playerID = id;
+    }
+
+    /* Getter for player ID */
+    public int getPlayerID(){
+        return playerID; 
+    }
+    
+    /* Lamport clock tick */
+    public Integer incrLampClk() {
+        lampClk++;
+        if(lampClk == 20)
+        	lampClk = 0;
+        return lampClk;
+    }
+
+    /* Initialize Lamport clock */
+    public void initLampClk(int val){
+        lampClk = val;
+    }
+
+    /* Getter for Lamport clock */
+    public Integer getLampClk(){
+    	return lampClk;
     }
 }

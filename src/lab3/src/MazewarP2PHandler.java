@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  */
 
-public class ClientHandlerThread extends Thread {
+public class MazewarP2PHandler extends Thread {
 	
     Socket socket;
     Client me;
@@ -46,7 +46,7 @@ public class ClientHandlerThread extends Thread {
 
     ScoreTableModel scoreModel;
 
-    public ClientHandlerThread(String nameserver_host, int nameserver_port, int client_port, ScoreTableModel sm){
+    public MazewarP2PHandler(String nameserver_host, int nameserver_port, int client_port, ScoreTableModel sm){
         /* Connect to naming service. */
         try {
 
@@ -137,7 +137,7 @@ public class ClientHandlerThread extends Thread {
         packetToClients.hostName = lookupTable.get(myId).hostName;
         packetToClients.portNum = lookupTable.get(myId).portNum;  
 
-        dispatcher.send(packetToClients);
+        dispatcher.peerSendMulticast(packetToClients);
     }
 
     public void broadcastNewClientLocation(){
@@ -156,7 +156,7 @@ public class ClientHandlerThread extends Thread {
         cd.player.setId(myId);
         lookupTable.put(myId,cd);
 
-        dispatcher.send(packetToClients);
+        dispatcher.peerSendMulticast(packetToClients);
 
     }
 
@@ -204,7 +204,7 @@ public class ClientHandlerThread extends Thread {
                     t_out = new ObjectOutputStream(socket.getOutputStream());
                     //t_in = new ObjectInputStream(socket.getInputStream());
 
-                    data.addSocketOutToList(key, t_out);
+                    data.addOutputStream(t_out, key);
 
                     System.out.println("Success!");
                 } catch(Exception e){
@@ -402,7 +402,7 @@ public class ClientHandlerThread extends Thread {
 				DataPacket packetToClients = new DataPacket();
 				packetToClients.scenarioType = DataPacket.PLAYER_QUIT;
 				packetToClients.playerID = myId;
-				dispatcher.send(packetToClients);
+				dispatcher.peerSendMulticast(packetToClients);
 		
 				// Don't exit until you have recieved all acknowledgements
 				//data.acquireSemaphore(data.socketOutList.size());;
@@ -457,7 +457,7 @@ public class ClientHandlerThread extends Thread {
         packetToClients.playerName = me.getName();
         packetToClients.playerID = myId;
 
-        dispatcher.send(packetToClients);  
+        dispatcher.peerSendMulticast(packetToClients);  
     }
 
     // Try and reserve a point!
@@ -510,7 +510,7 @@ public class ClientHandlerThread extends Thread {
         respawnPacket.playerDead = tc;
         respawnPacket.playerLocation = p;
         respawnPacket.playerDirection = d;
-        dispatcher.send(respawnPacket);
+        dispatcher.peerSendMulticast(respawnPacket);
     }
 
     public int getMyScore(){
@@ -571,10 +571,10 @@ public class ClientHandlerThread extends Thread {
 
     public void runEventFromQueue(Integer lc){
         boolean executed;
-        Integer currentLC = data.getMoveIndex();
+        Integer currentLC = data.getOpOrder();
         System.out.println("CHANDLER: in runEventFromQueue, got lamportClock " + lc + ", current eventIndex is " + currentLC);
 
-        if (data.getMoveIndex() == lc) {
+        if (data.getOpOrder() == lc) {
             int i = lc;
             while (eventQueue[i] != null) {
                 System.out.println("CHANDLER: running event with lc = " + i);
@@ -594,7 +594,7 @@ public class ClientHandlerThread extends Thread {
                 	i = 0;
             }
             System.out.println("CHANDLER: eventIndex is now  " + i);
-            data.setMoveIndex(i);
+            data.setOpOrder(i);
             //if(packetFromClient.client_id != myId)
             //    data.incrementLamportClock();
         } 

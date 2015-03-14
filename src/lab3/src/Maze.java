@@ -129,7 +129,7 @@ public abstract class Maze {
 
     // Lab 2 additions!
     // Add client handler
-    public abstract void addClientHandler(ClientHandlerThread ch);
+    public abstract void addClientHandler(MazewarP2PHandler ch);
     public abstract void setClient(Client sc, Client tc, Point p, Direction d);
     public abstract void addLock(Lock l);
 }

@@ -42,10 +42,10 @@ import java.util.concurrent.locks.Lock;
 
 public class MazeImpl extends Maze implements Serializable, ClientListener, Runnable {
 
-    ClientHandlerThread chandler;
+    MazewarP2PHandler chandler;
 
     // Get access to chandler.
-    public void addClientHandler(ClientHandlerThread ch){
+    public void addClientHandler(MazewarP2PHandler ch){
         chandler = ch;
     }
 

@@ -1,10 +1,10 @@
 New FILES:
 
-MazePacket.java      --DataPacket.java -Babneet -Removed dead variables and changed completely
+MazePacket.java      --DataPacket.java - Babneet - Removed dead variables and changed completely
 
-Dispatcher.java    --Broadcaster.java
-ListenerData.java   -- DataPacketManager.java
-ClientHandlerThread.java
+Dispatcher.java    --Broadcaster.java - Babneet - Completely chanaged
+ListenerData.java   --DataPacketManager.java - Babneet - Completely Changed
+ClientHandlerThread.java  --MazewarP2PHandler.java - Babneet
 MazewarListenerHandlerThread.java  -ClientRevieverThread.java - Sukrit - variables changed /functions inlined
 MazewarListener.java  --ClientReciever.java -Sukrit - variables changed
 
