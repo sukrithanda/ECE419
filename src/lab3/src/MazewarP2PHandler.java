@@ -304,7 +304,7 @@ public class MazewarP2PHandler extends Thread {
                     //add remote client
                     RemoteClient c = new RemoteClient(name);
                     clientTable.put(name, c);
-                    maze.addRemoteClient(c, packetFromLookup.playerLocation, packetFromLookup.playerDirection);
+                    maze.addClient(c, packetFromLookup.playerLocation, packetFromLookup.playerDirection);
                     break;
                 case DataPacket.PLAYER_ROBOT:
                     //add robot client
@@ -331,7 +331,7 @@ public class MazewarP2PHandler extends Thread {
                         //add remote client
                         RemoteClient c = new RemoteClient(key);
                         clientTable.put(key, c);
-                        maze.addRemoteClient(c, cData.playerLocation, cData.playerDirection);
+                        maze.addClient(c, cData.playerLocation, cData.playerDirection);
                         break;
                     case DataPacket.PLAYER_ROBOT:
                         //add robot client
@@ -523,7 +523,7 @@ public class MazewarP2PHandler extends Thread {
 
         // Spawn client	
         RemoteClient c = new RemoteClient(cd.playerName);
-        maze.addRemoteClient(c, cd.playerLocation, cd.playerDirection);
+        maze.addClient(c, cd.playerLocation, cd.playerDirection);
 
 		// Update score
 		scoreModel.setScore(c,score);
@@ -543,7 +543,7 @@ public class MazewarP2PHandler extends Thread {
 
         // Spawn client	
         RemoteClient c = new RemoteClient(cd.playerName);
-        maze.addRemoteClient(c, cd.playerLocation, cd.playerDirection);
+        maze.addClient(c, cd.playerLocation, cd.playerDirection);
 
         // Update tuple
         cd.player = c;

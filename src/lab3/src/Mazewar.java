@@ -46,19 +46,19 @@ public class Mazewar extends JFrame {
 	/**
      * The default width of the {@link Maze}.
      */
-    private final int mazeWidth = 5; 
+    private final int mazeWidth = 10; 
 
     /**
      * The default height of the {@link Maze}.
      */
-    private final int mazeHeight = 5;
+    private final int mazeHeight = 10;
 
     /**
      * The default random seed for the {@link Maze}.
      * All implementations of the same protocol must use 
      * the same seed value, or your mazes will be different.
      */
-    private final int pointSeed = (int) System.currentTimeMillis();//42;
+    private final int pointSeed = 35;
     private final int mazeSeed = 42;
 
     /**
@@ -117,16 +117,7 @@ public class Mazewar extends JFrame {
     public static void quit() {
         System.exit(0);
     }
-    
-    /**
-     * Debug 
-     */
-    boolean debug = true;
-    private void print(String message) {
-        if (debug) {
-            System.out.println("DEBUG: (Mazewar) " + message);
-        }
-    }
+   
 
     /** 
      * The place where all the pieces are put together. 
@@ -151,52 +142,48 @@ public class Mazewar extends JFrame {
             Mazewar.quit();
         }
 
-        String client_portStr = JOptionPane.showInputDialog("Enter port you will be listening from");
-        if((client_portStr == null) || (client_portStr.length() == 0)) {
+        String client_port = JOptionPane.showInputDialog("Enter client listening port");
+        if((client_port == null) || (client_port.length() == 0)) {
             Mazewar.quit();
         }
 
-        String host = JOptionPane.showInputDialog("Enter hostname of lookup");
+        String host = JOptionPane.showInputDialog("Enter hostname of the NameServer ");
         if((host == null) || (host.length() == 0)) {
             Mazewar.quit();
         }
 
-        String lookup_portStr = JOptionPane.showInputDialog("Enter port of lookup");
-        if((lookup_portStr == null) || (lookup_portStr.length() == 0)) {
+        String nameserver_port = JOptionPane.showInputDialog("Enter port of the NameServer");
+        if((nameserver_port == null) || (nameserver_port.length() == 0)) {
             Mazewar.quit();
         }
 
-        int client_port = Integer.parseInt(client_portStr);
-        int lookup_port = Integer.parseInt(lookup_portStr);
+        int client_port_int = Integer.parseInt(client_port);
+        int lookup_port_int = Integer.parseInt(nameserver_port);
 
         // Connect to naming service
-        print("creating client handler");
-        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port,client_port, scoreModel);
+        System.out.println("creating client handler");
+        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port_int,client_port_int, scoreModel);
         maze.addClientHandler(clientHandler);
 
-        // One lock to be used by all processes in this computer
-        print("creating lock");
+        System.out.println("creating lock");
         Lock lock = new ReentrantLock();
         maze.addLock(lock);
 
         // Create the GUIClient and connect it to the KeyListener queue
-        print("creating gui client");
+        System.out.println("creating gui client");
         guiClient = new GUIClient(name);
-        print("adding gui client to chandler");
+        System.out.println("adding gui client to chandler");
         guiClient.addClientHandler(clientHandler);
 
         // Register to lookup
-        print("registering with maze");
+        System.out.println("registering with maze");
         clientHandler.registerMaze(maze);
-        print(String.format("registering with lookup on port %d", client_port));
-        clientHandler.registerClientWithLookup(client_port, name);
+        System.out.println(String.format("registering with lookup on port %d", client_port_int));
+        clientHandler.registerClientWithLookup(client_port_int, name);
 
         clientHandler.me = guiClient;
         maze.addClient(guiClient);
         this.addKeyListener(guiClient);
-
-        // Broadcast your point and direction to all clients!
-        //clientHandler.broadcastNewClientLocation();
 
         // Create the panel that will display the maze.
         overheadPanel = new OverheadMazePanel(maze, guiClient);

@@ -17,8 +17,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 USA.
 */
   
-import java.util.Random;
 import java.io.Serializable;
+import java.util.Random;
 
 /**
  * A representation of the for Cardinal Directions with associated utility methods.
@@ -51,7 +51,7 @@ public class Direction implements Serializable {
         /** 
          * Create a new direction from an internal representation
          */
-        private Direction(int direction) {
+        public Direction(int direction) {
                 assert((direction >= 0) && (direction < 4));
                 this.direction = direction;
         }

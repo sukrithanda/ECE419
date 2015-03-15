@@ -42,7 +42,7 @@ public class GUIClient extends LocalClient implements KeyListener, Serializable{
          * @param e The {@link KeyEvent} that occurred.
          */
         public void keyPressed(KeyEvent e) {
-            chandler.handleKeyPress(e);
+            client_handler.handleKeyPress(e);
         }
         
         /**
