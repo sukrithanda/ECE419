@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NameServer {
     public static void main (String[] args) throws IOException {
         ServerSocket nameServerS = null;
-        /* Create Lookup server socket */
         try { 
             if (args.length == 1) {
                 nameServerS = new ServerSocket(Integer.parseInt(args[0]));
@@ -14,6 +13,7 @@ public class NameServer {
                 System.exit(-1);
             }
         } catch (IOException e) {
+        	System.err.println("ERROR: IO exception");
             System.exit(-1);
         }
 

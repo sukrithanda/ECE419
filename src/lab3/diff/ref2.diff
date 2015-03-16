@@ -11,27 +11,26 @@ MazewarListener.java  --ClientReciever.java -Sukrit - variables changed
 LookupHandler.java   --NameServerHandler.java -Sukrit -variables changed/inlined
 Lookup.java          --NameServer.java -Sukrit  -variables changed
 
+
+Existing FILES:
+
+Client.java differ - Sukrit changed functions/order/variables
+DirectedPoint.java differ - Sukrit minor changes
+Direction.java differ - Sukrit minor changes
+GUIClient.java differ - Sukrit minor changes
+MazeImpl.java differ - Sukrit changed variable/ other various changes
+Maze.java differ     - Sukrit minor changes
+Mazewar.java differ -Babneet -Removed dead variables
+OverheadMazePanel.java differ - Sukrit minor changes
+Projectile.java differ - Sukrit minor changes
+ScoreTableModel.java differ - Sukrit minor changes
+
 Removed Files: 
 
 MazeEvent.java       -- ClientConnectInfo.java - REMOVED not needed
 MazewarServerHandlerThread.java --NOT USED - REMOVED
-MazewarServer.java              --NOokayT USED - REMOVED
+MazewarServer.java              --NOT USED - REMOVED
 ServerData.java             --NOT USED - REMOVED
 Catcher.java      -- NOT USED - REMOVED
 ClientData.java   -- Removed dont need we can just use DataPacket.java
 LookupBroadcast.java --NOT USED -REMOVED
-
-Existing FILES:
-
-Client.java differ
-DirectedPoint.java differ
-Direction.java differ
-GUIClient.java differ
-Makefile differ
-Makefile.dep differ
-MazeImpl.java differ
-Maze.java differ
-Mazewar.java differ -Babneet -Removed dead variables
-OverheadMazePanel.java differ
-Projectile.java differ
-ScoreTableModel.java differ

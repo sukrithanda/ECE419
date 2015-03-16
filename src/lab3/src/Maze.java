@@ -51,7 +51,7 @@ public abstract class Maze {
      */
     public abstract Cell getCell(Point point);
 
-    public int pointSeed;
+    public int newseed;
 
     /* Client functionality ************************************************/
     
@@ -127,6 +127,6 @@ public abstract class Maze {
     public abstract void removeMazeListener(MazeListener ml);
     
     public abstract void addClientHandler(MazewarP2PHandler ch);
-    public abstract void setClient(Client sc, Client tc, Point p, Direction d);
+    public abstract void configureClient(Client sc, Client tc, Point p, Direction d);
     public abstract void addLock(Lock l);
 }

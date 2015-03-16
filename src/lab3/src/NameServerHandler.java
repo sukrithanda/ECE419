@@ -29,8 +29,6 @@ public class NameServerHandler extends Thread {
         try {
             ObjectInputStream server_in = new ObjectInputStream(s.getInputStream());
             DataPacket packetIncoming;
-
-            /* stream to write back to client */
             ObjectOutputStream server_out = new ObjectOutputStream(s.getOutputStream());
 
             try {
@@ -84,9 +82,7 @@ public class NameServerHandler extends Thread {
 				        server_out.writeObject(packetOutgoing);
 				        continue;
 				    }
-
-
-				    /* CLIENT_QUIT */
+				    
 				    if (packetIncoming.scenarioType == DataPacket.NS_QUIT) {
 				        packetOutgoing.scenarioType = DataPacket.NS_RESPONSE;
 
@@ -99,20 +95,18 @@ public class NameServerHandler extends Thread {
 				        continue;
 				    }
 
-				    /* if code comes here, there is an error in the packet */
-				    System.err.println("Packet not recognized exiting!");
+				    //error in packet
+				    System.err.println("Packet not recognized. Exiting!");
 				    System.exit(-1);
 
 				}
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
-            /* cleanup when client exits */
+           //client exit
             server_in.close();
             server_out.close();
             s.close();

@@ -14,10 +14,10 @@ public class ClientRecieverThread extends Thread {
     
     ObjectInputStream inStream;
     ObjectOutputStream outStream;
-    
+    int logical_CLK;
+
     MazewarP2PHandler clientHandler;
     Broadcaster broadcaster;
-    int laportCLK;
 
     DataPacketManager packetManager = null;
     Socket remoteS = null;
@@ -31,7 +31,9 @@ public class ClientRecieverThread extends Thread {
             this.clientHandler = clientHandler;
             this.packetManager = listener;
             this.outStream = new ObjectOutputStream(remoteS.getOutputStream());
+        	print("contructor finished- ClientReceiverThread");
         } catch (IOException e) {
+        	print("ERROR: IO exception");
         }
     }
 
@@ -55,7 +57,6 @@ public class ClientRecieverThread extends Thread {
                 /* Process each packet */
                 switch (packetIn.scenarioType) {
                     case DataPacket.PLAYER_CLK:
-                       // clientClock();
                         int requested_lc = packetIn.lampClk;    
                         dataPacket.scenarioType = DataPacket.PLAYER_ACK;
                         packetManager.acqLock();
@@ -63,7 +64,7 @@ public class ClientRecieverThread extends Thread {
                         print("requested_lc: " + requested_lc + " current lamportClock: " + packetManager.getLampClk());
                         dataPacket.lampClk = packetManager.getLampClk();
 
-                        if(requested_lc >= laportCLK){
+                        if(requested_lc >= logical_CLK){
                             print("incrementing my lc after recieving CLIENT_CLOCK packet");
                             // Clock is valid!
                             if(requested_lc == 19){
@@ -71,14 +72,11 @@ public class ClientRecieverThread extends Thread {
                             } else {
                             	packetManager.initLampClk(++requested_lc);
                             }
-                            //Set up and send awknowledgement packet
-                            //eventPacket.lamportClock = lamportClock;]
                             dataPacket.clkCredible = true;
-
                             print("Incremented lc is " + packetManager.getLampClk());
 
                         } else{
-                            // Oh no! The lamport clock is not valid.
+     
                             // Send the latest lamport clock and disawknowledgement packet
                             dataPacket.clkCredible = false;
                         }
@@ -89,13 +87,10 @@ public class ClientRecieverThread extends Thread {
                         broadcaster.peerSend((DataPacket) dataPacket, packetIn.playerID);
                         break;
                     case DataPacket.PLAYER_ACK:
-                       // clientAck();
-                        int lamportClock = packetIn.lampClk;
                         boolean clockIsValid = packetIn.clkCredible;
-
                         if(!clockIsValid){
-                            // Update the current lamport clock
                             print("Awknowledgement failed. LC set to: " +  packetIn.lampClk);
+                            // Update the current lamport clock
                             packetManager.setLampClkIndex(packetIn.lampClk);
                         }
 
@@ -107,8 +102,6 @@ public class ClientRecieverThread extends Thread {
 
                             /* Wait for handshaking packet from client, store client state in 
                              * global client table */
-                            //DataPacket eventPacket2 = new DataPacket();
-
                             /* Add to client list */
                             dataPacket = setup(dataPacket, clientHandler.localPlayerID(), DataPacket.PLAYER_SPAWN, 
                             		packetManager.getLampClk());
@@ -131,10 +124,7 @@ public class ClientRecieverThread extends Thread {
                         }
                         break;
                     case DataPacket.PLAYER_SPAWN:
-                       // clientSpawn();
                         if (packetIn.newPlayer) {
-
-                            // Update to the latest lamport clock
                             if(packetManager.getLampClk() < packetIn.lampClk)
                             		packetManager.setLampClkIndex(packetIn.lampClk);
                 	    
@@ -288,7 +278,7 @@ public class ClientRecieverThread extends Thread {
                     	print("Freed semaphore");
                     	break;
                     default:
-                        System.out.println("Unkown type of DataPacket");
+                        print("Unkown type of DataPacket");
                         break;
                 }
             }

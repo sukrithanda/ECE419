@@ -62,17 +62,12 @@ public abstract class Client implements Serializable{
                 return name;
         }
       
-        /**
-         * Set id of this {@link Client}.
-         */
+
         public void setId(Integer id) {
             this.id = id;
         }
 
-        /**
-         * Get id of this {@link Client}.
-         * @return A {@link Integer} with Id of the {@link Client}.
-         */
+    
         public Integer getId() {
             return id;
         }
@@ -118,11 +113,11 @@ public abstract class Client implements Serializable{
             this.client_handler = ch;
         }
 
-        public boolean isKilled(){
+        public boolean getKilled(){
             return this.isKilled;
         }
 
-        public void setKilledTo(boolean result){
+        public void setKilled(boolean result){
             this.isKilled = result;
         }
         

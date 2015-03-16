@@ -52,29 +52,6 @@ public class ScoreTableModel implements TableModel, MazeListener {
          */
         private final int scoreAdjKilled = -5;
 
-    public void setScore(Client client, int score){
-                assert(client != null);
-                Object o = clientMap.get(client);
-                assert(o instanceof ScoreWrapper);
-                scoreSet.remove(o);
-                ScoreWrapper s = (ScoreWrapper)o;
-                s.adjustScore(score);
-                scoreSet.add(s);
-                notifyListeners();
-    }
-
-    public int getScore(Client client){
-                assert(client != null);
-                Object o = clientMap.get(client);
-                assert(o instanceof ScoreWrapper);
-                scoreSet.remove(o);
-                ScoreWrapper s = (ScoreWrapper)o;
-                int score = s.getScore();
-                scoreSet.add(s);
-                notifyListeners();
-		return score;
-    }
-
         /**
          * A wrapper class for pairing a {@link Client} with its
          * score.
@@ -264,5 +241,26 @@ public class ScoreTableModel implements TableModel, MazeListener {
                         TableModelListener tml = (TableModelListener)o;
                         tml.tableChanged(new TableModelEvent(this));
                 } 
+        }
+        
+        public void updateScore(Client client, int score){
+            assert(client != null);
+            Object o = clientMap.get(client);
+            assert(o instanceof ScoreWrapper);
+            scoreSet.remove(o);
+            ((ScoreWrapper) o).adjustScore(score);
+            scoreSet.add((ScoreWrapper)o);
+            notifyListeners();
+        }
+
+        public int returnScore(Client client){
+            assert(client != null);
+            Object o = clientMap.get(client);
+            assert(o instanceof ScoreWrapper);
+            scoreSet.remove(o);
+            int score =  ((ScoreWrapper) o).getScore();
+            scoreSet.add((ScoreWrapper)o);
+            notifyListeners();
+            return score;
         }
 }

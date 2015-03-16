@@ -148,25 +148,25 @@ public class MazewarP2PHandler extends Thread {
 			}
 			Mazewar.quit();
 		} else if (event.getKeyCode() == KeyEvent.VK_DOWN
-				&& !localPlayer.isKilled()) {
+				&& !localPlayer.getKilled()) {
 			dispatchPlayerOpToPeers(DataPacket.PLAYER_BACK);
 		} else if (event.getKeyCode() == KeyEvent.VK_UP
-				&& !localPlayer.isKilled()) {
+				&& !localPlayer.getKilled()) {
 			dispatchPlayerOpToPeers(DataPacket.PLAYER_FORWARD);
 		} else if (event.getKeyCode() == KeyEvent.VK_RIGHT
-				&& !localPlayer.isKilled()) {
+				&& !localPlayer.getKilled()) {
 			dispatchPlayerOpToPeers(DataPacket.PLAYER_RIGHT);
 		} else if (event.getKeyCode() == KeyEvent.VK_LEFT
-				&& !localPlayer.isKilled()) {
+				&& !localPlayer.getKilled()) {
 			dispatchPlayerOpToPeers(DataPacket.PLAYER_LEFT);
 		} else if (event.getKeyCode() == KeyEvent.VK_SPACE
-				&& !localPlayer.isKilled()) {
+				&& !localPlayer.getKilled()) {
 			dispatchPlayerOpToPeers(DataPacket.PLAYER_FIRE);
 		}
 	}
 
 	private void movePlayerForward(Client client) {
-		if (!client.isKilled()) {
+		if (!client.getKilled()) {
 			client.forward();
 		} else {
 			print("Forward Op - No player found with ID " + peerPacket.playerID);
@@ -174,7 +174,7 @@ public class MazewarP2PHandler extends Thread {
 	}
 
 	private void movePlayerBackward(Client client) {
-		if (!client.isKilled()) {
+		if (!client.getKilled()) {
 			client.backup();
 		} else {
 			print("Backward Op - No player found with ID "
@@ -183,7 +183,7 @@ public class MazewarP2PHandler extends Thread {
 	}
 
 	private void movePlayerLeft(Client client) {
-		if (!client.isKilled()) {
+		if (!client.getKilled()) {
 			client.turnLeft();
 		} else {
 			print("Left Op - No player found with ID " + peerPacket.playerID);
@@ -191,7 +191,7 @@ public class MazewarP2PHandler extends Thread {
 	}
 
 	private void movePlayerRight(Client client) {
-		if (!client.isKilled()) {
+		if (!client.getKilled()) {
 			client.turnRight();
 		} else {
 			print("Right Op - No player found with ID " + peerPacket.playerID);
@@ -199,7 +199,7 @@ public class MazewarP2PHandler extends Thread {
 	}
 
 	private void playerFire(Client client) {
-		if (!client.isKilled()) {
+		if (!client.getKilled()) {
 			client.fire();
 		} else {
 			print("Fire Op - No player found with ID " + peerPacket.playerID);
@@ -318,7 +318,7 @@ public class MazewarP2PHandler extends Thread {
 
 		RemoteClient remoteClient = new RemoteClient(dp.playerName);
 		maze.addClient(remoteClient, dp.playerLocation, dp.playerDirection);
-		tableOfScores.setScore(remoteClient, playerScore);
+		tableOfScores.updateScore(remoteClient, playerScore);
 		dp.player = remoteClient;
 		dp.player.setId(playerID);
 		playerOps.put(playerID, dp);
@@ -351,8 +351,8 @@ public class MazewarP2PHandler extends Thread {
 
 			Point point = peerPacket.playerLocation;
 			Direction direction = peerPacket.playerDirection;
-			maze.setClient(killerClient, victimClient, point, direction);
-			victimClient.setKilledTo(false);
+			maze.configureClient(killerClient, victimClient, point, direction);
+			victimClient.setKilled(false);
 
 			killerClient.freeLock();
 		} else {
@@ -374,8 +374,8 @@ public class MazewarP2PHandler extends Thread {
 
 			Point point = dpIn.playerLocation;
 			Direction direction = dpIn.playerDirection;
-			maze.setClient(killerClient, victimClient, point, direction);
-			victimClient.setKilledTo(false);
+			maze.configureClient(killerClient, victimClient, point, direction);
+			victimClient.setKilled(false);
 
 			killerClient.freeLock();
 		} else {
@@ -514,7 +514,7 @@ public class MazewarP2PHandler extends Thread {
 	}
 
 	public int localPlayerScore() {
-		return tableOfScores.getScore(playerOps.get(playerID).player);
+		return tableOfScores.returnScore(playerOps.get(playerID).player);
 	}
 
 	public void recordPlayerOp(DataPacket dp) {
