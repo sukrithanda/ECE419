@@ -118,14 +118,9 @@ public abstract class Client implements Serializable{
             this.client_handler = ch;
         }
 
-        public boolean setPosition(Point point){
-            return client_handler.reservePoint(point);
-        }
-
         public boolean isKilled(){
             return this.isKilled;
         }
-
 
         public void setKilledTo(boolean result){
             this.isKilled = result;

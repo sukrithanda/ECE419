@@ -104,12 +104,12 @@ public class ClientRecieverThread extends Thread {
                             //DataPacket eventPacket2 = new DataPacket();
 
                             /* Add to client list */
-                            dataPacket = setup(dataPacket, clientHandler.getMyId(), DataPacket.PLAYER_SPAWN, 
+                            dataPacket = setup(dataPacket, clientHandler.localPlayerID(), DataPacket.PLAYER_SPAWN, 
                             		packetManager.getLampClk());
                             dataPacket.newPlayer = true;
                             dataPacket.NSTable = new ConcurrentHashMap();
-                            dataPacket.NSTable.put(clientHandler.getMyId(), clientHandler.getMe());
-                            dataPacket.playerScore = clientHandler.getMyScore();
+                            dataPacket.NSTable.put(clientHandler.localPlayerID(), clientHandler.localPlayerInfo());
+                            dataPacket.playerScore = clientHandler.localPlayerScore();
 
                             /* Get new client socket info */
                             String hostname = packetIn.hostName;
@@ -133,13 +133,13 @@ public class ClientRecieverThread extends Thread {
                             		packetManager.setLampClkIndex(packetIn.lampClk);
                 	    
 
-                            clientHandler.spawnClient(packetIn.playerID,packetIn.NSTable, packetIn.playerScore);
+                            clientHandler.playerSpawn(packetIn.playerScore,packetIn.playerID, packetIn.NSTable);
 
                             packetManager.freeSemaphore(1);
 
                         } else { 
-                            clientHandler.addEventToQueue(packetIn);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(packetIn);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         }
                         break;
                     case DataPacket.PLAYER_FORWARD:
@@ -149,8 +149,8 @@ public class ClientRecieverThread extends Thread {
                             print(id + " forward");
                             print("Lamport Clock "+ dataPacket.lampClk);
 
-                            clientHandler.addEventToQueue(dataPacket);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(dataPacket);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -161,8 +161,8 @@ public class ClientRecieverThread extends Thread {
                             print(id + " back");
                             dataPacket = setup(dataPacket, id, DataPacket.PLAYER_BACK, packetIn.lampClk);
 
-                            clientHandler.addEventToQueue(dataPacket);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(dataPacket);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -173,8 +173,8 @@ public class ClientRecieverThread extends Thread {
                             print(id + " left");
                             dataPacket = setup(dataPacket, id, DataPacket.PLAYER_LEFT, packetIn.lampClk);
 
-                            clientHandler.addEventToQueue(dataPacket);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(dataPacket);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -185,8 +185,8 @@ public class ClientRecieverThread extends Thread {
                             print(id + " right");
                             dataPacket = setup(dataPacket, id, DataPacket.PLAYER_RIGHT, packetIn.lampClk);
 
-                            clientHandler.addEventToQueue(dataPacket);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(dataPacket);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -197,8 +197,8 @@ public class ClientRecieverThread extends Thread {
                             print(id + " fire");
                             dataPacket = setup(dataPacket, id, DataPacket.PLAYER_FIRE, packetIn.lampClk);
 
-                            clientHandler.addEventToQueue(dataPacket);
-                            clientHandler.runEventFromQueue(packetIn.lampClk);
+                            clientHandler.recordPlayerOp(dataPacket);
+                            clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -216,7 +216,7 @@ public class ClientRecieverThread extends Thread {
                             dataPacket.playerDirection = d;
                             dataPacket.playerFire = packetIn.playerFire;
                             dataPacket.playerDead = packetIn.playerDead;
-                            clientHandler.clientRespawnEvent(packetIn);
+                            clientHandler.playerRespawn(packetIn);
            
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -253,7 +253,7 @@ public class ClientRecieverThread extends Thread {
 
                             dataPacket.scenarioType = DataPacket.PLAYER_ORDER_VAL;
 
-                            clientHandler.addEventToQueue(dataPacket);
+                            clientHandler.recordPlayerOp(dataPacket);
                         } catch (Exception e) {
                              e.printStackTrace();
                         }
@@ -271,8 +271,8 @@ public class ClientRecieverThread extends Thread {
                             outStream.close();
                             remoteS.close();
 
-	                        clientHandler.addEventToQueue(packetIn);
-	                	    clientHandler.runEventFromQueue(packetIn.lampClk);
+	                        clientHandler.recordPlayerOp(packetIn);
+	                	    clientHandler.executePlayerOperation(packetIn.lampClk);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

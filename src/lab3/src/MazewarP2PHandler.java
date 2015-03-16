@@ -1,668 +1,530 @@
 import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
-/* Client handler 
- * Each client will be registered with a client handler
-
- Client connects to NameServer
- Client creates a thread to listen for incoming packets from other clients
- Client creates a broadcast thread to broadcast client state change
-
- * Listens for actions by GUI client and notifies listener
- * Receives game events queue from listener and executes events 
- * 
+/**
+ * MazewarP2PHandler - Game controller (performs game operations) - Communicates
+ * with NameServer - Handles incoming and outgoing messages
  */
 
 public class MazewarP2PHandler extends Thread {
-	
-    Socket socket;
-    Client me;
-    int myId;
-    Maze maze;
-    ObjectOutputStream out;
-    ObjectInputStream in;
-    ConcurrentHashMap<String, Client> clientTable; 
-    DataPacket [] eventQueue = new DataPacket[20];
-    ConcurrentHashMap<Integer, DataPacket> lookupTable;
-
-    int seqNum;
-    boolean quitting = false;
-
-    DataPacketManager data = new DataPacketManager();
-
-    Broadcaster dispatcher = new Broadcaster(data, this);    
-
-    DataPacket packetFromLookup = new DataPacket();
-    DataPacket packetFromClient;
 
-    boolean DEBUG = true;
-
-    ScoreTableModel scoreModel;
+	/* Connect to naming service. */
+	public MazewarP2PHandler(String nameserverHost, int nameserverPort,
+			ScoreTableModel tableOfScores, int client_Port) {
+		try {
+			this.socket = new Socket(nameserverHost, nameserverPort);
+			this.playersInfo = new ConcurrentHashMap<String, Client>();
+			this.tableOfScores = tableOfScores;
+			this.outgoingMessages = new ObjectOutputStream(
+					socket.getOutputStream());
+			this.incomingMessages = new ObjectInputStream(
+					socket.getInputStream());
+			ClientReciever clientReceiver = new ClientReciever(this,
+					client_Port, manager, broadcaster);
+			new Thread(clientReceiver).start();
+		} catch (Exception e) {
+			e.printStackTrace();
+			print("Failed to connect to NameServer");
+		}
+	}
 
-    public MazewarP2PHandler(String nameserver_host, int nameserver_port, int client_port, ScoreTableModel sm){
-        /* Connect to naming service. */
-        try {
+	Maze maze;
+	ScoreTableModel tableOfScores;
+	Socket socket;
 
-            System.out.println("Connecting to Naming Service...");
-
-            // Connect to NameServer
-            socket = new Socket(nameserver_host,nameserver_port);
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-            clientTable = new ConcurrentHashMap<String, Client>();	 
-            scoreModel = sm;
-       
-            // Start client listener
-            // 		- for other clients to connect to
-            //		- to handle incoming packets
-            ClientReciever mazewarListener = new ClientReciever(this,client_port, data, dispatcher);
-            
-            Thread thread = new Thread(mazewarListener);
-            thread.start();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }
-
-    public void registerMaze(Maze maze) {
-        this.maze = maze;
-    }
-
-
-    public void registerClientWithLookup(int client_port, String name){
-        DataPacket packetToLookup = new DataPacket();
-
-        try{
-            // Register self
-            packetToLookup.scenarioType = DataPacket.NS_REGISTER;
-            packetToLookup.playerType = DataPacket.PLAYER_REMOTE;
-            packetToLookup.playerName = name;
-            packetToLookup.hostName = InetAddress.getLocalHost().getHostName();
-            packetToLookup.portNum = client_port;
-
-            out.writeObject(packetToLookup);
-
-            packetFromLookup = (DataPacket) in.readObject();
-
-            lookupRegisterEvent();
-        }catch (Exception e){
-            e.printStackTrace();
-            System.out.println("ERROR: registering with listener");
-        }
-
-    }
-
-    public void registerRobotWithMazewar(Client name){
-        DataPacket packetToLookup = new DataPacket();
-
-        try{
+	int playerID;
+	Client localPlayer;
 
-            /* Initialize handshaking with listener */
-            Random rand = new Random();
+	ObjectInputStream incomingMessages;
+	ObjectOutputStream outgoingMessages;
 
-            packetToLookup.scenarioType = DataPacket.PLAYER_REGISTER;
-            packetToLookup.playerName = me.getName();
-            packetToLookup.playerLocation = maze.getClientPoint(name);
-            packetToLookup.playerDirection = me.getOrientation();
-            packetToLookup.playerType = DataPacket.PLAYER_REMOTE;
-            System.out.println("CLIENT REGISTER: " + me.getName());
-            out.writeObject(packetToLookup);
-
-            /* Init client table with yourself */
-            clientTable.put(me.getName(), me);
-
-        }catch (IOException e){
-            e.printStackTrace();
-            System.out.println("ERROR: registering with listener");
-        }
-
-    }
-
-    public void broadcastNewClient(){
-        System.out.println("Broadcasting CLIENT_REGISTER");
-
-        DataPacket packetToClients = new DataPacket();
-
-        packetToClients.scenarioType = DataPacket.PLAYER_REGISTER;
-        packetToClients.playerID = myId; 
-        packetToClients.hostName = lookupTable.get(myId).hostName;
-        packetToClients.portNum = lookupTable.get(myId).portNum;  
-
-        dispatcher.peerSendMulticast(packetToClients);
-    }
-
-    public void broadcastNewClientLocation(){
-        DataPacket cd = new DataPacket();
-        cd = getMe();
-
-        DataPacket packetToClients = new DataPacket();
-
-        packetToClients.scenarioType = DataPacket.PLAYER_SPAWN;
-        packetToClients.newPlayer = false;
-        packetToClients.playerID = myId;
-        packetToClients.NSTable = new ConcurrentHashMap();
-        packetToClients.NSTable.put(myId,getMe());
+	DataPacketManager manager = new DataPacketManager();
+	Broadcaster broadcaster = new Broadcaster(manager, this);
 
-        cd.player = me;
-        cd.player.setId(myId);
-        lookupTable.put(myId,cd);
-
-        dispatcher.peerSendMulticast(packetToClients);
+	ConcurrentHashMap<String, Client> playersInfo;
+	ConcurrentHashMap<Integer, DataPacket> playerOps;
 
-    }
+	DataPacket peerPacket;
+	DataPacket nameServerPacket = new DataPacket();
 
-    // Check if registration successful
-    private void lookupRegisterEvent(){
-    	// Check if there is an error
-    	if(packetFromLookup.errType == DataPacket.ERR_RESERVED_NS_PORT){
-    		System.out.println("Try a different port!");
-    		Mazewar.quit();
-    	}
-    	
-        // Get the current lookup table
-        lookupTable = new ConcurrentHashMap<Integer, DataPacket>();
-        lookupTable = packetFromLookup.NSTable;
+	int orderVal;
+	int LAMPORT_LIMIT = 20;
+	DataPacket[] orderOps = new DataPacket[LAMPORT_LIMIT];
 
-        myId = packetFromLookup.playerID;
-        //data.addSocketOutToList(myId, out);
+	boolean exitGame = false;
+	boolean debug = true;
 
-        // Connect to all currently existing users
-        // Save their out ports!
-        if(!lookupTable.isEmpty()){
-            Object[] keys = lookupTable.keySet().toArray();
-            int size = lookupTable.size(); 
+	void print(String str) {
+		if (debug) {
+			System.out.println("DEBUG: (MazewarP2PHandler) " + str);
+		}
+	}
 
-            // Connect to all client listeners, except for yourself
-            for(int i = 0; i < size; i++){
-                int key = Integer.parseInt(keys[i].toString());
+	private boolean displayPlayerOperation(Client client) {
+		boolean status = true;
 
-                if (key == myId) continue;
+		if (client != null) {
+			client.getLock();
+		}
 
-                System.out.println("Adding client " + key);
+		int type = peerPacket.scenarioType;
 
-                DataPacket client_data = lookupTable.get(key);
-                String client_host = client_data.hostName;
-                int client_port = client_data.portNum;
+		if (DataPacket.PLAYER_LEFT == type) {
 
-                Socket socket = null;
-                ObjectOutputStream t_out = null;
-                ObjectInputStream t_in = null;
+			movePlayerLeft(client);
 
-                // Save socket out!
-                try{
-                    socket = new Socket(client_host, client_port);
+		} else if (DataPacket.PLAYER_RIGHT == type) {
 
-                    t_out = new ObjectOutputStream(socket.getOutputStream());
-                    //t_in = new ObjectInputStream(socket.getInputStream());
-
-                    data.addOutputStream(t_out, key);
-
-                    System.out.println("Success!");
-                } catch(Exception e){
-                    System.err.println("ERROR: Couldn't connect to currently existing client");
-                }				    
-            }
-            broadcastNewClient();
-        }
-    }
-
-    // Store all clients
-    // ID, host name, port
-    private void lookupGetEvent(){
-        // May not need
-    }
-
-    //Remove the client that is quitting.
-    private void clientQuitEvent(){	
-        System.out.println("Remove quitting client");
-	Client c = (lookupTable.get(packetFromClient.playerID)).player;
-            maze.removeClient(c);
-	    
-    }
-
-    private void clientRespawnEvent(){
-        Integer t_id = packetFromClient.playerDead;
-        Integer s_id = packetFromClient.playerFire;
-        debug("in clientRespawnEvent(), shooter is " +  s_id + ", respawnning target " + t_id);
-
-        if (lookupTable.containsKey(t_id)){
-            Client tc = (lookupTable.get(t_id)).player;
-            //tc.getLock();
-
-            Client sc = (lookupTable.get(s_id)).player;
-            sc.getLock();
-
-            Point p = packetFromClient.playerLocation;
-            Direction d = packetFromClient.playerDirection;
-
-            maze.setClient(sc, tc, p,d);
-
-            tc.setKilledTo(false);
-
-            //tc.releaseLock();
-            sc.releaseLock();
-
-        } else {
-            System.out.println("CLIENT: no client with id " +packetFromClient.playerID+ " in respawn");
-        }
-    }
-
-
-    public void clientRespawnEvent(DataPacket packetFromClient){
-        Integer t_id = packetFromClient.playerDead;
-        Integer s_id = packetFromClient.playerFire;
-        debug("in clientRespawnEvent(), shooter is " +  s_id + ", respawnning target " + t_id);
-
-        if (lookupTable.containsKey(t_id)){
-            Client tc = (lookupTable.get(t_id)).player;
-            //tc.getLock();
-
-            Client sc = (lookupTable.get(s_id)).player;
-            sc.getLock();
-
-            Point p = packetFromClient.playerLocation;
-            Direction d = packetFromClient.playerDirection;
-
-            maze.setClient(sc, tc, p,d);
-
-            tc.setKilledTo(false);
-
-            //tc.releaseLock();
-	    sc.releaseLock();
-
-        } else {
-            System.out.println("CLIENT: no client with id " +packetFromClient.playerID+ " in respawn");
-        }
-    }
-
-    /**
-     * Process listener packet eventsi
-     * */
-    private void addClientEvent() {
-        String name = packetFromLookup.playerName;
-        ConcurrentHashMap<String, DataPacket> clientTableFromLookup = packetFromLookup.playerList;
-        System.out.println("CLIENT: Lookup sent addClient event");
-
-        if (name.equals(me.getName())) {
-            System.out.println("CLIENT: Lookup added me!");
-        }
-        else {
-            System.out.println("CLIENT: Lookup adding new client " + name);
-            int clientType = packetFromLookup.playerType;
-
-            switch (clientType) {
-                case DataPacket.PLAYER_REMOTE:
-                    //add remote client
-                    RemoteClient c = new RemoteClient(name);
-                    clientTable.put(name, c);
-                    maze.addClient(c, packetFromLookup.playerLocation, packetFromLookup.playerDirection);
-                    break;
-                case DataPacket.PLAYER_ROBOT:
-                    //add robot client
-                    break;
-                default:
-                    System.out.println("CLIENT: no new clients on add client event");
-                    break;
-            }
-        }
-
-        seqNum = packetFromLookup.orderVal;
-
-        // else listener is telling you to add a new client
-        // create new clients into clientTable based on any
-        // new clients seen in clientTableFromLookup
-        for (Map.Entry<String, DataPacket> entry : clientTableFromLookup.entrySet()) {
-            String key = entry.getKey();
-            System.out.println(key);
-            if (!clientTable.containsKey(key)) {
-                DataPacket cData = entry.getValue();
-
-                switch (cData.playerType) {
-                    case DataPacket.PLAYER_REMOTE:
-                        //add remote client
-                        RemoteClient c = new RemoteClient(key);
-                        clientTable.put(key, c);
-                        maze.addClient(c, cData.playerLocation, cData.playerDirection);
-                        break;
-                    case DataPacket.PLAYER_ROBOT:
-                        //add robot client
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-    }
-
-    private void clientForwardEvent(Client c) {
-        if (!c.isKilled()) { 
-            c.forward();
-        } else {
-            System.out.println("CLIENT: no client " +packetFromClient.playerID+ " in forward");
-        }
-    }
-
-    private void clientBackEvent(Client c) {
-        if (!c.isKilled()) { 
-            c.backup();
-        } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in backup");
-        }
-    }
-
-    private void clientLeftEvent(Client c) {
-        if (!c.isKilled()) { 
-            c.turnLeft();
-        } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in left");
-        }
-    }
-
-    private void clientRightEvent(Client c) {
-        if (!c.isKilled()) { 
-            c.turnRight();
-        } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in right");
-        }
-    }
-
-
-    private void clientFireEvent(Client c) {
-        if (!c.isKilled()) { 
-            c.fire();
-            // Decrement score.
-            //scoreTable.clientFired(clientTable.get(name));
-
-        } else {
-            System.out.println("CLIENT: no client named " +packetFromClient.playerID+ " in fire");
-        }
-    }
-
-    /**
-     * Listen for client keypress and send listener packets 
-     * */
-    public void handleKeyPress(KeyEvent e) {
-        // If the user pressed Q, invoke the cleanup code and quit. 
-        if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
-            System.out.println("CLIENT: Quitting");
-
-            quitting = true;
-
-            try{
-				// Send to other clients you are quitting
+			movePlayerRight(client);
+
+		} else if (DataPacket.PLAYER_BACK == type) {
+
+			movePlayerBackward(client);
+
+		} else if (DataPacket.PLAYER_FORWARD == type) {
+
+			movePlayerForward(client);
+
+		} else if (DataPacket.PLAYER_SPAWN == type) {
+
+			playerSpawn();
+
+		} else if (DataPacket.PLAYER_RESPAWN == type) {
+
+			playerRespawn();
+
+		} else if (DataPacket.PLAYER_FIRE == type) {
+
+			playerFire(client);
+
+		} else if (DataPacket.PLAYER_REGISTER == type) {
+
+			recordPlayerOperation();
+
+		} else if (DataPacket.PLAYER_QUIT == type) {
+
+			playerExitOperation();
+
+		} else {
+			status = false;
+			print("Unknown packet type" + peerPacket.scenarioType);
+		}
+
+		if (client != null) {
+			client.releaseLock();
+		}
+
+		print("Lock released");
+		return status;
+	}
+
+	public void manageKeyboardCmd(KeyEvent event) {
+		if ((event.getKeyChar() == 'Q') || (event.getKeyChar() == 'q')) {
+			exitGame = true;
+			try {
 				DataPacket packetToClients = new DataPacket();
-				packetToClients.scenarioType = DataPacket.PLAYER_QUIT;
-				packetToClients.playerID = myId;
-				dispatcher.peerSendMulticast(packetToClients);
-		
-				// Don't exit until you have recieved all acknowledgements
-				//data.acquireSemaphore(data.socketOutList.size());;
-		
-				// Send lookup that you are quitting
 				DataPacket packetToLookup = new DataPacket();
+
+				packetToClients.playerID = playerID;
+				packetToClients.scenarioType = DataPacket.PLAYER_QUIT;
+				broadcaster.peerSendMulticast(packetToClients);
+				packetToLookup.playerID = playerID;
 				packetToLookup.scenarioType = DataPacket.NS_QUIT;
-				packetToLookup.playerID = myId;
-				out.writeObject(packetToLookup);
-				System.out.println("Client quit from lookup.");
-		
-				System.out.println("Client about to leave.");
-		
-				// Close lookup connection.
-		                out.close();
-		                in.close();
-		                socket.close();
-		
-				// Close client connections.
-				// data.quit();
+				outgoingMessages.writeObject(packetToLookup);
 
-            } catch(Exception e1){
-                System.out.println("CLIENT: Couldn't close sockets...");
-            }
+				outgoingMessages.close();
+				incomingMessages.close();
+				socket.close();
+				print("Player leaving game");
+			} catch (Exception exception) {
+				exception.printStackTrace();
+				print("Player cannot leave game");
+			}
+			Mazewar.quit();
+		} else if (event.getKeyCode() == KeyEvent.VK_DOWN
+				&& !localPlayer.isKilled()) {
+			dispatchPlayerOpToPeers(DataPacket.PLAYER_BACK);
+		} else if (event.getKeyCode() == KeyEvent.VK_UP
+				&& !localPlayer.isKilled()) {
+			dispatchPlayerOpToPeers(DataPacket.PLAYER_FORWARD);
+		} else if (event.getKeyCode() == KeyEvent.VK_RIGHT
+				&& !localPlayer.isKilled()) {
+			dispatchPlayerOpToPeers(DataPacket.PLAYER_RIGHT);
+		} else if (event.getKeyCode() == KeyEvent.VK_LEFT
+				&& !localPlayer.isKilled()) {
+			dispatchPlayerOpToPeers(DataPacket.PLAYER_LEFT);
+		} else if (event.getKeyCode() == KeyEvent.VK_SPACE
+				&& !localPlayer.isKilled()) {
+			dispatchPlayerOpToPeers(DataPacket.PLAYER_FIRE);
+		}
+	}
 
-            Mazewar.quit();
-            // Up-arrow moves forward.
-        } else if(e.getKeyCode() == KeyEvent.VK_UP && !me.isKilled()) {
-            sendPacketToClients(DataPacket.PLAYER_FORWARD);
-            // Down-arrow moves backward.
-        } else if(e.getKeyCode() == KeyEvent.VK_DOWN && !me.isKilled()) {
-            sendPacketToClients(DataPacket.PLAYER_BACK);
-            //backup();
-            // Left-arrow turns left.
-        } else if(e.getKeyCode() == KeyEvent.VK_LEFT && !me.isKilled()) {
-            sendPacketToClients(DataPacket.PLAYER_LEFT);
-            //turnLeft();
-            // Right-arrow turns right.
-        } else if(e.getKeyCode() == KeyEvent.VK_RIGHT && !me.isKilled()) {
-            sendPacketToClients(DataPacket.PLAYER_RIGHT);
-            //turnRight();
-            // Spacebar fires.
-        } else if(e.getKeyCode() == KeyEvent.VK_SPACE && !me.isKilled()) {
-            sendPacketToClients(DataPacket.PLAYER_FIRE);
-            //fire();
-        }
-    }
+	private void movePlayerForward(Client client) {
+		if (!client.isKilled()) {
+			client.forward();
+		} else {
+			print("Forward Op - No player found with ID " + peerPacket.playerID);
+		}
+	}
 
-    private void sendPacketToClients(int packetType) {
-        DataPacket packetToClients = new DataPacket();
-        packetToClients.scenarioType = packetType;
-        packetToClients.playerName = me.getName();
-        packetToClients.playerID = myId;
+	private void movePlayerBackward(Client client) {
+		if (!client.isKilled()) {
+			client.backup();
+		} else {
+			print("Backward Op - No player found with ID "
+					+ peerPacket.playerID);
+		}
+	}
 
-        dispatcher.peerSendMulticast(packetToClients);  
-    }
+	private void movePlayerLeft(Client client) {
+		if (!client.isKilled()) {
+			client.turnLeft();
+		} else {
+			print("Left Op - No player found with ID " + peerPacket.playerID);
+		}
+	}
 
-    // Try and reserve a point!
-    public boolean reservePoint(Point point){
-        DataPacket packetToLookup = new DataPacket();
+	private void movePlayerRight(Client client) {
+		if (!client.isKilled()) {
+			client.turnRight();
+		} else {
+			print("Right Op - No player found with ID " + peerPacket.playerID);
+		}
+	}
 
-        // try{
-        //     packetToLookup.packet_type = MazePacket.RESERVE_POINT;
-        //     packetToLookup.client_name = me.getName();
-        //     packetToLookup.client_location = point;
-        //     packetToLookup.client_direction = null;
-        //     packetToLookup.client_type = MazePacket.REMOTE;
-        //     System.out.println("CLIENT " + me.getName() + " RESERVING POINT");
-        //     out.writeObject(packetToLookup);
+	private void playerFire(Client client) {
+		if (!client.isKilled()) {
+			client.fire();
+		} else {
+			print("Fire Op - No player found with ID " + peerPacket.playerID);
+		}
+	}
 
-        //     packetFromLookup = new MazePacket();
-        //     packetFromLookup = (MazePacket) in.readObject();
+	public void playerEnrollNameServer(String playerName, int clientPort) {
+		DataPacket dpOut = new DataPacket();
 
-        //     int error_code = packetFromLookup.error_code;
+		try {
+			dpOut.scenarioType = DataPacket.NS_REGISTER;
+			dpOut.playerType = DataPacket.PLAYER_REMOTE;
+			dpOut.playerName = playerName;
+			dpOut.hostName = InetAddress.getLocalHost().getHostName();
+			dpOut.portNum = clientPort;
 
-        //     if(error_code == 0)
-        // 	return true;
-        //     else
-        //     	return false;
+			outgoingMessages.writeObject(dpOut);
+			nameServerPacket = (DataPacket) incomingMessages.readObject();
+			checkNameServerConnection();
+		} catch (Exception e) {
+			e.printStackTrace();
+			print("Unable to connect to NameServer");
+		}
 
+	}
 
-        // }catch (Exception e){
-        //     e.printStackTrace();
-        //     System.out.println("ERROR: reserving point");
-        //     return false;
-        // }
-        return true;
-    }
+	public void robolEnroll(Client client) {
+		DataPacket dpOut = new DataPacket();
+		try {
+			dpOut.scenarioType = DataPacket.PLAYER_REGISTER;
+			dpOut.playerName = localPlayer.getName();
+			dpOut.playerLocation = maze.getClientPoint(client);
+			dpOut.playerDirection = localPlayer.getOrientation();
+			dpOut.playerType = DataPacket.PLAYER_REMOTE;
 
-    public boolean clientIsMe(Client c){
-        if(c == me)
-            return true;
-        else
-            return false;
-    }
+			print("Successfully registered " + localPlayer.getName());
+			outgoingMessages.writeObject(dpOut);
+			playersInfo.put(localPlayer.getName(), localPlayer);
+		} catch (IOException e) {
+			e.printStackTrace();
+			print("Unable to register");
+		}
 
+	}
 
-    public void sendClientRespawn(Integer sc, Integer tc, Point p, Direction d) {
-        debug("I just died. in sendClientRespawn");
-        debug(String.format("in sendClientRespawnEvent, params: %d %d", sc, tc));
-        DataPacket respawnPacket = new DataPacket();
-        respawnPacket.playerID = myId;
-        respawnPacket.scenarioType = DataPacket.PLAYER_RESPAWN;
-        respawnPacket.playerFire = sc;
-        respawnPacket.playerDead = tc;
-        respawnPacket.playerLocation = p;
-        respawnPacket.playerDirection = d;
-        dispatcher.peerSendMulticast(respawnPacket);
-    }
+	public void playerJoin() {
+		DataPacket dpOut = new DataPacket();
+		dpOut.scenarioType = DataPacket.PLAYER_REGISTER;
+		dpOut.playerID = playerID;
+		dpOut.hostName = playerOps.get(playerID).hostName;
+		dpOut.portNum = playerOps.get(playerID).portNum;
+		broadcaster.peerSendMulticast(dpOut);
+	}
 
-    public int getMyScore(){
-    	return scoreModel.getScore(lookupTable.get(myId).player);
-    }
+	public void sendNewPlayerLocation() {
+		DataPacket dpOut = new DataPacket();
+		DataPacket dpIn = new DataPacket();
+		dpIn = localPlayerInfo();
 
-    public void spawnClient(Integer id, ConcurrentHashMap<Integer,DataPacket> tuple, int score){
-        DataPacket cd = new DataPacket();
-        cd = tuple.get(id);
+		dpOut.scenarioType = DataPacket.PLAYER_SPAWN;
+		dpOut.newPlayer = false;
+		dpOut.playerID = playerID;
+		dpOut.NSTable = new ConcurrentHashMap();
+		dpOut.NSTable.put(playerID, localPlayerInfo());
 
-        // Spawn client	
-        RemoteClient c = new RemoteClient(cd.playerName);
-        maze.addClient(c, cd.playerLocation, cd.playerDirection);
+		dpIn.player = localPlayer;
+		dpIn.player.setId(playerID);
+		playerOps.put(playerID, dpIn);
+		broadcaster.peerSendMulticast(dpOut);
+	}
 
-		// Update score
-		scoreModel.setScore(c,score);
+	private void checkNameServerConnection() {
+		if (DataPacket.ERR_RESERVED_NS_PORT == nameServerPacket.errType) {
+			print("Port being used");
+			Mazewar.quit();
+		}
 
-        // Update tuple
-        cd.player = c;
-        cd.player.setId(id);
-        lookupTable.put(id, cd);
-    }
+		playerID = nameServerPacket.playerID;
+		playerOps = new ConcurrentHashMap<Integer, DataPacket>();
+		playerOps = nameServerPacket.NSTable;
 
-    public void spawnClient(){
-        Integer id = packetFromClient.playerID;
-        ConcurrentHashMap<Integer,DataPacket> tuple = packetFromClient.NSTable;
+		if (!playerOps.isEmpty()) {
+			Object[] hashKeys = playerOps.keySet().toArray();
+			int size = playerOps.size();
 
-        DataPacket cd = new DataPacket();
-        cd = tuple.get(id);
+			for (int i = 0; i < size; i++) {
+				int hashKey = Integer.parseInt(hashKeys[i].toString());
+				if (hashKey == playerID) {
+					continue;
+				}
 
-        // Spawn client	
-        RemoteClient c = new RemoteClient(cd.playerName);
-        maze.addClient(c, cd.playerLocation, cd.playerDirection);
+				DataPacket client_data = playerOps.get(hashKey);
+				String client_host = client_data.hostName;
+				int client_port = client_data.portNum;
+				print("Connecting player " + hashKey);
 
-        // Update tuple
-        cd.player = c;
-        cd.player.setId(id);
-        lookupTable.put(id, cd);
-    }
+				Socket socket = null;
+				try {
+					socket = new Socket(client_host, client_port);
+					manager.addOutputStream(
+							new ObjectOutputStream(socket.getOutputStream()),
+							hashKey);
+					print("Connected to player " + playerID);
+				} catch (Exception e) {
+					print("Unable to connect to player " + playerID);
+				}
+			}
+			playerJoin();
+		}
+	}
 
-    public DataPacket getMe() {
-        DataPacket DataPacket = new DataPacket();
-        DataPacket.playerID = myId;
-        DataPacket.playerName = me.getName();
-        DataPacket.playerLocation = maze.getClientPoint(me);
-        DataPacket.playerDirection = me.getOrientation();
-        return DataPacket;
-    }
+	public void playerSpawn(int playerScore, Integer playerID,
+			ConcurrentHashMap<Integer, DataPacket> dataEntry) {
+		DataPacket dp = new DataPacket();
+		dp = dataEntry.get(playerID);
 
-    public Integer getMyId() {
-        return myId;
-    }
+		RemoteClient remoteClient = new RemoteClient(dp.playerName);
+		maze.addClient(remoteClient, dp.playerLocation, dp.playerDirection);
+		tableOfScores.setScore(remoteClient, playerScore);
+		dp.player = remoteClient;
+		dp.player.setId(playerID);
+		playerOps.put(playerID, dp);
+	}
 
-    public void addEventToQueue(DataPacket p) {
-        System.out.println("CHANDLER: Saving event at index: " + p.lampClk);
-        eventQueue[p.lampClk] =  p;
-    }
+	public void playerSpawn() {
+		ConcurrentHashMap<Integer, DataPacket> dataEntry = peerPacket.NSTable;
+		Integer playerID = peerPacket.playerID;
+		DataPacket dp = new DataPacket();
+		dp = dataEntry.get(playerID);
 
-    public void runEventFromQueue(Integer lc){
-        boolean executed;
-        Integer currentLC = data.getOpOrder();
-        System.out.println("CHANDLER: in runEventFromQueue, got lamportClock " + lc + ", current eventIndex is " + currentLC);
+		RemoteClient remoteClient = new RemoteClient(dp.playerName);
+		maze.addClient(remoteClient, dp.playerLocation, dp.playerDirection);
+		dp.player = remoteClient;
+		dp.player.setId(playerID);
+		playerOps.put(playerID, dp);
+	}
 
-        if (data.getOpOrder() == lc) {
-            int i = lc;
-            while (eventQueue[i] != null) {
-                System.out.println("CHANDLER: running event with lc = " + i);
-                packetFromClient = eventQueue[lc];
-                eventQueue[lc] = null;
+	private void playerRespawn() {
+		Integer firePlayerID = peerPacket.playerFire;
+		Integer victimPlayerID = peerPacket.playerDead;
+		print("Player killer " + firePlayerID + "; Player victim "
+				+ victimPlayerID);
 
-                Client c = null;
-                if(packetFromClient.scenarioType != DataPacket.PLAYER_SPAWN)
-                	if(packetFromClient.scenarioType != DataPacket.PLAYER_QUIT)
-                		c = (lookupTable.get(packetFromClient.playerID)).player;
+		if (playerOps.containsKey(victimPlayerID)) {
+			Client killerClient = (playerOps.get(firePlayerID)).player;
+			Client victimClient = (playerOps.get(victimPlayerID)).player;
 
-                executed = executeEvent(c);
-                if (!executed) break;
+			killerClient.getLock();
 
-                i = i + 1;
-                if(i == 20)
-                	i = 0;
-            }
-            System.out.println("CHANDLER: eventIndex is now  " + i);
-            data.setOpOrder(i);
-            //if(packetFromClient.client_id != myId)
-            //    data.incrementLamportClock();
-        } 
-    }
+			Point point = peerPacket.playerLocation;
+			Direction direction = peerPacket.playerDirection;
+			maze.setClient(killerClient, victimClient, point, direction);
+			victimClient.setKilledTo(false);
 
-    private boolean executeEvent(Client c) {
-        boolean status = true;
+			killerClient.releaseLock();
+		} else {
+			print("No player found with id: " + peerPacket.playerID);
+		}
+	}
 
-        if(c != null)
-            c.getLock();		
+	public void playerRespawn(DataPacket dpIn) {
+		Integer victimPlayerID = dpIn.playerDead;
+		Integer firePlayerID = dpIn.playerFire;
+		print("Player killer " + firePlayerID + "; Player victim "
+				+ victimPlayerID);
 
-        int type = packetFromClient.scenarioType;
-        
-        if (DataPacket.PLAYER_LEFT == type) {
-        	
-        	clientLeftEvent(c);
-        	
-        } else if (DataPacket.PLAYER_RIGHT == type) {
-        	
-        	clientRightEvent(c);
-        	
-        } else if (DataPacket.PLAYER_BACK == type) {
-        	
-        	clientBackEvent(c);
-        	
-        } else if (DataPacket.PLAYER_FORWARD == type) {
-        	
-        	clientForwardEvent(c);
-        	
-        } else if (DataPacket.PLAYER_SPAWN == type) {
-        	
-        	spawnClient();
-        	
-        } else if (DataPacket.PLAYER_RESPAWN == type) {
-        	
-        	clientRespawnEvent();
-        	
-        } else if (DataPacket.PLAYER_FIRE == type) {
-        	
-        	clientFireEvent(c);
-        	
-        } else if (DataPacket.PLAYER_REGISTER == type) {
-        	
-        	addClientEvent();
-        	
-        } else if (DataPacket.PLAYER_QUIT == type) {
-        	
-        	clientQuitEvent();
-        	
-        } else {
-            status = false;
-            System.out.println("ERROR: UNKNOWN PACKET TYPE" + packetFromClient.scenarioType);
-        }
+		if (playerOps.containsKey(victimPlayerID)) {
+			Client killerClient = (playerOps.get(firePlayerID)).player;
+			Client victimClient = (playerOps.get(victimPlayerID)).player;
 
-        if(c != null)
-            c.releaseLock();
+			killerClient.getLock();
 
-        System.out.println("SYNCRONIZATION: LOCK RELEASED");
-        return status;
-    }
+			Point point = dpIn.playerLocation;
+			Direction direction = dpIn.playerDirection;
+			maze.setClient(killerClient, victimClient, point, direction);
+			victimClient.setKilledTo(false);
 
-    //BABNEET - REMOVE
-    private void debug(String s) {
-        if (DEBUG) {
-            System.out.println("DEBUG: (ClientHandlerThread) " + s);
-        }
-    }
+			killerClient.releaseLock();
+		} else {
+			print("No player found with id: " + dpIn.playerID);
+		}
+	}
 
+	public void executePlayerOperation(Integer lampClk) {
+		Integer lampClkCurrent = manager.getOpOrder();
+		boolean runStatus;
+		print("Recent player operation " + lampClkCurrent + ", Lamport Clock "
+				+ lampClk);
+
+		if (manager.getOpOrder() == lampClk) {
+			int index = lampClk;
+			while (orderOps[index] != null) {
+				print("Executing player operation " + index);
+
+				Client client = null;
+				peerPacket = orderOps[lampClk];
+				orderOps[lampClk] = null;
+				if (peerPacket.scenarioType != DataPacket.PLAYER_SPAWN) {
+					if (peerPacket.scenarioType != DataPacket.PLAYER_QUIT) {
+						client = (playerOps.get(peerPacket.playerID)).player;
+					}
+				}
+
+				runStatus = displayPlayerOperation(client);
+				if (!runStatus) {
+					break;
+				}
+
+				index = index + 1;
+				if (LAMPORT_LIMIT == index) {
+					index = 0;
+				}
+			}
+
+			manager.setOpOrder(index);
+			print("Player operation  " + index);
+		}
+	}
+
+	private void recordPlayerOperation() {
+		ConcurrentHashMap<String, DataPacket> playerList = nameServerPacket.playerList;
+		String playerName = nameServerPacket.playerName;
+
+		if (playerName.equals(localPlayer.getName())) {
+			print("Player " + playerName + " already exists");
+		} else {
+			int playerType = nameServerPacket.playerType;
+			print("Adding new player " + playerName);
+
+			switch (playerType) {
+			case DataPacket.PLAYER_REMOTE:
+				RemoteClient remoteClient = new RemoteClient(playerName);
+				playersInfo.put(playerName, remoteClient);
+				maze.addClient(remoteClient, nameServerPacket.playerLocation,
+						nameServerPacket.playerDirection);
+				break;
+			case DataPacket.PLAYER_ROBOT:
+				break;
+			default:
+				print("No player Ops available");
+				break;
+			}
+		}
+
+		orderVal = nameServerPacket.orderVal;
+
+		for (Map.Entry<String, DataPacket> mapElement : playerList.entrySet()) {
+			String mapKey = mapElement.getKey();
+			print(mapKey);
+			if (!playersInfo.containsKey(mapKey)) {
+				DataPacket dp = mapElement.getValue();
+				switch (dp.playerType) {
+				case DataPacket.PLAYER_REMOTE:
+					RemoteClient remoteClient = new RemoteClient(mapKey);
+					playersInfo.put(mapKey, remoteClient);
+					maze.addClient(remoteClient, dp.playerLocation,
+							dp.playerDirection);
+					break;
+				case DataPacket.PLAYER_ROBOT:
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+
+	private void dispatchPlayerOpToPeers(int type) {
+		DataPacket dpOut = new DataPacket();
+		dpOut.scenarioType = type;
+		dpOut.playerID = playerID;
+		dpOut.playerName = localPlayer.getName();
+		broadcaster.peerSendMulticast(dpOut);
+	}
+
+	public boolean isLocalPlayer(Client client) {
+		if (client == localPlayer) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public void dispatchRespawnMessage(Point point, Direction direction,
+			Integer killersID, Integer victimsID) {
+		print("Respawning, Killer " + killersID + ", Victim " + victimsID);
+		DataPacket dpOut = new DataPacket();
+		dpOut.playerID = playerID;
+		dpOut.scenarioType = DataPacket.PLAYER_RESPAWN;
+		dpOut.playerLocation = point;
+		dpOut.playerDirection = direction;
+		dpOut.playerFire = killersID;
+		dpOut.playerDead = victimsID;
+		broadcaster.peerSendMulticast(dpOut);
+	}
+
+	public DataPacket localPlayerInfo() {
+		DataPacket dp = new DataPacket();
+		dp.playerID = playerID;
+		dp.playerName = localPlayer.getName();
+		dp.playerDirection = localPlayer.getOrientation();
+		dp.playerLocation = maze.getClientPoint(localPlayer);
+		return dp;
+	}
+
+	public void setMaze(Maze maze) {
+		this.maze = maze;
+	}
+
+	public Integer localPlayerID() {
+		return playerID;
+	}
+
+	public int localPlayerScore() {
+		return tableOfScores.getScore(playerOps.get(playerID).player);
+	}
+
+	public void recordPlayerOp(DataPacket dp) {
+		orderOps[dp.lampClk] = dp;
+		print("Recording player in ordered list " + dp.lampClk);
+	}
+
+	public void playerExitOperation() {
+		print("Player exiting");
+		Client client = (playerOps.get(peerPacket.playerID)).player;
+		maze.removeClient(client);
+	}
 }
-
-

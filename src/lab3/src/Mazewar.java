@@ -46,12 +46,12 @@ public class Mazewar extends JFrame {
 	/**
      * The default width of the {@link Maze}.
      */
-    private final int mazeWidth = 10; 
+    private final int mazeWidth = 5; 
 
     /**
      * The default height of the {@link Maze}.
      */
-    private final int mazeHeight = 10;
+    private final int mazeHeight = 5;
 
     /**
      * The default random seed for the {@link Maze}.
@@ -162,7 +162,7 @@ public class Mazewar extends JFrame {
 
         // Connect to naming service
         System.out.println("creating client handler");
-        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port_int,client_port_int, scoreModel);
+        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port_int,scoreModel, client_port_int);
         maze.addClientHandler(clientHandler);
 
         System.out.println("creating lock");
@@ -177,11 +177,11 @@ public class Mazewar extends JFrame {
 
         // Register to lookup
         System.out.println("registering with maze");
-        clientHandler.registerMaze(maze);
+        clientHandler.setMaze(maze);
         System.out.println(String.format("registering with lookup on port %d", client_port_int));
-        clientHandler.registerClientWithLookup(client_port_int, name);
+        clientHandler.playerEnrollNameServer(name, client_port_int);
 
-        clientHandler.me = guiClient;
+        clientHandler.localPlayer = guiClient;
         maze.addClient(guiClient);
         this.addKeyListener(guiClient);
 
@@ -243,7 +243,7 @@ public class Mazewar extends JFrame {
         overheadPanel.repaint();
         this.requestFocusInWindow();
         clientHandler.start();
-        clientHandler.broadcastNewClientLocation();
+        clientHandler.sendNewPlayerLocation();
     }
 
 

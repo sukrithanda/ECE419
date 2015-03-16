@@ -212,14 +212,10 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
         Point point = new Point(rand.nextInt(maxX),rand.nextInt(maxY));
         CellImpl cell = getCellImpl(point);
 
-        boolean initPosition = client.setPosition(point);
-
         // Repeat until we find an empty cell
-        while(cell.getContents() != null || initPosition == false) {
+        while(cell.getContents() != null) {
             point = new Point(rand.nextInt(maxX),rand.nextInt(maxY));
             cell = getCellImpl(point);
-
-            initPosition = client.setPosition(point);
         } 
         addClient(client, point, null);
     }
@@ -513,7 +509,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
         source.getLock();
         target.setKilledTo(true);
 
-        boolean clientIsMe = client_handler.clientIsMe(target);
+        boolean clientIsMe = client_handler.isLocalPlayer(target);
         if(clientIsMe){
             assert(source != null);
             assert(target != null);
@@ -548,7 +544,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             target.releaseLock();
             source.releaseLock();
 
-            client_handler.sendClientRespawn(source.getId(),target.getId(),point,d);
+            client_handler.dispatchRespawnMessage(point,d,source.getId(),target.getId());
             update();
 
 	    return;

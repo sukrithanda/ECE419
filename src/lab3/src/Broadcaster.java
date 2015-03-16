@@ -56,8 +56,8 @@ public class Broadcaster extends Thread {
             dpOut.playerName = dpIn.playerName;
             dpOut.lampClk = dpIn.lampClk;
 
-            peerHandler.addEventToQueue(dpOut);
-            peerHandler.runEventFromQueue(dpIn.lampClk);
+            peerHandler.recordPlayerOp(dpOut);
+            peerHandler.executePlayerOperation(dpIn.lampClk);
         }
     }
 
@@ -85,7 +85,7 @@ public class Broadcaster extends Thread {
 					print("Send RESPAWN message to peers");
 					out.writeObject(dp);
 				}
-				peerHandler.clientRespawnEvent(dp);
+				peerHandler.playerRespawn(dp);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
