@@ -27,11 +27,11 @@ public class DataPacketManager implements Serializable {
     ConcurrentHashMap<Integer, ObjectOutputStream> outputMessageStreams = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
     LinkedBlockingQueue<DataPacket> playerOps = new LinkedBlockingQueue<DataPacket>();
     
-    boolean debug = true;
+    int test = 1;
 
     public void print(String str) {
-        if (debug) {
-            System.out.println("DEBUG: (Broadcaster) " + str);
+        if (test == 1) {
+            System.out.println("DEBUG: (DataPacketManager) " + str);
         }
     }
     

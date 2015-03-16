@@ -88,6 +88,14 @@ public class Mazewar extends JFrame {
      */
     private static final JTextPane console = new JTextPane();
 
+    /**
+     * User Inputs
+     */
+    public String playerName;
+    public String playerPortStr;
+    public String nameServerHost;
+    public String nameserverPortStr;
+    
     /** 
      * Write a message to the console followed by a newline.
      * @param msg The {@link String} to print.
@@ -111,6 +119,14 @@ public class Mazewar extends JFrame {
         console.setText("");
     }
 
+    int test = 1;
+    
+    public void print(String str) {
+        if (test == 1) {
+            System.out.println("DEBUG: (Mazewar) " + str);
+        }
+    }
+    
     /**
      * Static method for performing cleanup before exiting the game.
      */
@@ -118,7 +134,6 @@ public class Mazewar extends JFrame {
         System.exit(0);
     }
    
-
     /** 
      * The place where all the pieces are put together. 
      */
@@ -136,52 +151,33 @@ public class Mazewar extends JFrame {
         assert(scoreModel != null);
         maze.addMazeListener(scoreModel);
 
-        // Throw up a dialog to get the GUIClient name.
-        String name = JOptionPane.showInputDialog("Enter your name");
-        if((name == null) || (name.length() == 0)) {
-            Mazewar.quit();
-        }
+        getUserInputs();
 
-        String client_port = JOptionPane.showInputDialog("Enter client listening port");
-        if((client_port == null) || (client_port.length() == 0)) {
-            Mazewar.quit();
-        }
-
-        String host = JOptionPane.showInputDialog("Enter hostname of the NameServer ");
-        if((host == null) || (host.length() == 0)) {
-            Mazewar.quit();
-        }
-
-        String nameserver_port = JOptionPane.showInputDialog("Enter port of the NameServer");
-        if((nameserver_port == null) || (nameserver_port.length() == 0)) {
-            Mazewar.quit();
-        }
-
-        int client_port_int = Integer.parseInt(client_port);
-        int lookup_port_int = Integer.parseInt(nameserver_port);
+        int playerPort = Integer.parseInt(playerPortStr);
+        int nameServerPort = Integer.parseInt(nameserverPortStr);
 
         // Connect to naming service
-        System.out.println("creating client handler");
-        MazewarP2PHandler clientHandler = new MazewarP2PHandler(host, lookup_port_int,scoreModel, client_port_int);
-        maze.addClientHandler(clientHandler);
+        print("creating MazewarP2PHandler");
+        MazewarP2PHandler peerHandler = new MazewarP2PHandler(nameServerHost, nameServerPort,scoreModel, playerPort);
+        maze.addClientHandler(peerHandler);
 
-        System.out.println("creating lock");
+        print("creating lock");
         Lock lock = new ReentrantLock();
         maze.addLock(lock);
 
         // Create the GUIClient and connect it to the KeyListener queue
-        System.out.println("creating gui client");
-        guiClient = new GUIClient(name);
-        System.out.println("adding gui client to chandler");
-        guiClient.addClientHandler(clientHandler);
+        print("creating gui client");
+        guiClient = new GUIClient(playerName);
+        print("adding gui client to chandler");
+        guiClient.addClientHandler(peerHandler);
 
         // Register to lookup
-        System.out.println("registering with maze");
-        clientHandler.setMaze(maze);
-        System.out.println(String.format("registering with lookup on port %d", client_port_int));
-        clientHandler.playerEnrollNameServer(name, client_port_int);
+        print("registering with maze");
+        peerHandler.setMaze(maze);
+        print("registering with lookup on port " + playerPort);
+        peerHandler.playerEnrollNameServer(playerName, playerPort);
 
-        clientHandler.localPlayer = guiClient;
+        peerHandler.localPlayer = guiClient;
         maze.addClient(guiClient);
         this.addKeyListener(guiClient);
 
@@ -242,11 +238,32 @@ public class Mazewar extends JFrame {
         setVisible(true);
         overheadPanel.repaint();
         this.requestFocusInWindow();
-        clientHandler.start();
-        clientHandler.sendNewPlayerLocation();
+        peerHandler.start();
+        peerHandler.sendNewPlayerLocation();
     }
 
+    public void getUserInputs() {
+        playerName = JOptionPane.showInputDialog("Enter your name");
+        if((playerName == null) || (playerName.length() == 0)) {
+            Mazewar.quit();
+        }
 
+        playerPortStr = JOptionPane.showInputDialog("Enter player port");
+        if((playerPortStr == null) || (playerPortStr.length() == 0)) {
+            Mazewar.quit();
+        }
+
+        nameServerHost = JOptionPane.showInputDialog("Enter NameServer hostname");
+        if((nameServerHost == null) || (nameServerHost.length() == 0)) {
+            Mazewar.quit();
+        }
+
+        nameserverPortStr = JOptionPane.showInputDialog("Enter NameServer port");
+        if((nameserverPortStr == null) || (nameserverPortStr.length() == 0)) {
+            Mazewar.quit();
+        }
+    }
+    
     /**
      * Entry point for the game.  
      * @param args Command-line arguments.

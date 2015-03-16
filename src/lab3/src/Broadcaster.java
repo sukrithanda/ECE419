@@ -20,10 +20,10 @@ public class Broadcaster extends Thread {
 
     ConcurrentHashMap<Integer, ObjectOutputStream> outgoing = new ConcurrentHashMap<Integer, ObjectOutputStream>(); 
     
-    boolean debug = true;
+    int test = 1;
 
     public void print(String str) {
-        if (debug) {
+        if (test == 1) {
             System.out.println("DEBUG: (Broadcaster) " + str);
         }
     }

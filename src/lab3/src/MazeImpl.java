@@ -42,11 +42,19 @@ import java.util.concurrent.locks.Lock;
 
 public class MazeImpl extends Maze implements Serializable, ClientListener, Runnable {
 
-    MazewarP2PHandler client_handler;
+    MazewarP2PHandler peerHandler;
 
+    int test = 1;
+    
+    public void print(String str) {
+        if (test == 1) {
+            System.out.println("DEBUG: (MazeImpl) " + str);
+        }
+    }
+    
     // Get access to chandler.
-    public void addClientHandler(MazewarP2PHandler ch){
-        client_handler = ch;
+    public void addClientHandler(MazewarP2PHandler peerHandler){
+        this.peerHandler = peerHandler;
     }
 
     public void addLock(Lock l){
@@ -259,7 +267,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             return false;
         }
         
-        System.out.println("Fired! Client: " + client.getName());
+        print("Player shooting " + client.getName());
         lock.lock();
 
        
@@ -363,7 +371,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
         while(true) {
             if(!projectileMap.isEmpty()) {
 
-                System.out.println("Projectile occured!!!");
+                print("Shot fired");
 
                 Iterator it = projectileMap.keySet().iterator();
                 synchronized(projectileMap) {
@@ -378,7 +386,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                         DirectedPoint dp = (DirectedPoint)asdf;
                         Direction d = dp.getDirection();
 
-                        System.out.println("***Owner's " + prj.getOwner().getName() + " prj at X: " + dp.getX() + " Y: " + dp.getY());
+                        print("***Owner's " + prj.getOwner().getName() + " prj at X: " + dp.getX() + " Y: " + dp.getY());
 */
                         lock.unlock();
 
@@ -414,15 +422,15 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
 
         Object o = projectileMap.get(prj);
         assert(o instanceof DirectedPoint);
-        DirectedPoint dp = (DirectedPoint)o;
-        Direction d = dp.getDirection();
-        CellImpl cell = getCellImpl(dp);
+        DirectedPoint directionPoint = (DirectedPoint)o;
+        Direction direction = directionPoint.getDirection();
+        CellImpl cell = getCellImpl(directionPoint);
 
-        System.out.println("Owner: " + prj.getOwner().getName() + " at X: " + dp.getX() + " Y: " + dp.getY());
+        print("Player - " + prj.getOwner().getName() + " at x-coord - " + directionPoint.getX() + " y-coord - " + directionPoint.getY());
 
 
         /* Check for a wall */
-        if(cell.isWall(d)) {
+        if(cell.isWall(direction)) {
             // If there is a wall, the projectile goes away.
             cell.setContents(null);
             deadPrj.add(prj);
@@ -430,7 +438,7 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             return deadPrj;
         }
 
-        DirectedPoint newPoint = new DirectedPoint(dp.move(d), d);
+        DirectedPoint newPoint = new DirectedPoint(directionPoint.move(direction), direction);
 
         /* Is the point within the bounds of maze? */
         assert(checkBounds(newPoint));
@@ -505,11 +513,11 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
      * @param target The {@link Client} that was killed.
      */
     private synchronized void killClient(Client source, Client target) {
-        target.getLock();
-        source.getLock();
+        target.acquireLock();
+        source.acquireLock();
         target.setKilledTo(true);
 
-        boolean clientIsMe = client_handler.isLocalPlayer(target);
+        boolean clientIsMe = peerHandler.isLocalPlayer(target);
         if(clientIsMe){
             assert(source != null);
             assert(target != null);
@@ -536,23 +544,20 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
                 d = Direction.random();
             }
 
+            print(String.format("Killer - " + source.getId() + "; Victim - " + target.getId()));
 
-            // Broadcast where the killed client will re-spawn
-            System.out.println(String.format("MAZEIMPL in killClient(), shooter %d, target %d", source.getId(), target.getId()));
+            target.freeLock();
+            source.freeLock();
 
-
-            target.releaseLock();
-            source.releaseLock();
-
-            client_handler.dispatchRespawnMessage(point,d,source.getId(),target.getId());
+            peerHandler.dispatchRespawnMessage(point,d,source.getId(),target.getId());
             update();
 
 	    return;
 
             } else {
                 update();
-                target.releaseLock();
-                source.releaseLock();
+                target.freeLock();
+                source.freeLock();
                 return;
 
             }

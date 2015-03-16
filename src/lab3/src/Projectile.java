@@ -25,13 +25,16 @@ USA.
 
 public class Projectile {
 
+	    /**
+	     * Used to flag dead projectiles
+	     */
+	    public boolean isDestroyed = false;
+	    
         /**
          * The {@link Client} that owns this {@link Projectile}.
          */
         private final Client owner;
         
-     	public boolean isDestroyed = false;
-
         /**
          * Create a new {@link Projectile} owned by the specified
          * {@link Client}.

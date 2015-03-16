@@ -58,10 +58,10 @@ public class MazewarP2PHandler extends Thread {
 	DataPacket[] orderOps = new DataPacket[LAMPORT_LIMIT];
 
 	boolean exitGame = false;
-	boolean debug = true;
+	int test = 1;
 
 	void print(String str) {
-		if (debug) {
+		if (test == 1) {
 			System.out.println("DEBUG: (MazewarP2PHandler) " + str);
 		}
 	}
@@ -70,7 +70,7 @@ public class MazewarP2PHandler extends Thread {
 		boolean status = true;
 
 		if (client != null) {
-			client.getLock();
+			client.acquireLock();
 		}
 
 		int type = peerPacket.scenarioType;
@@ -117,7 +117,7 @@ public class MazewarP2PHandler extends Thread {
 		}
 
 		if (client != null) {
-			client.releaseLock();
+			client.freeLock();
 		}
 
 		print("Lock released");
@@ -347,14 +347,14 @@ public class MazewarP2PHandler extends Thread {
 			Client killerClient = (playerOps.get(firePlayerID)).player;
 			Client victimClient = (playerOps.get(victimPlayerID)).player;
 
-			killerClient.getLock();
+			killerClient.acquireLock();
 
 			Point point = peerPacket.playerLocation;
 			Direction direction = peerPacket.playerDirection;
 			maze.setClient(killerClient, victimClient, point, direction);
 			victimClient.setKilledTo(false);
 
-			killerClient.releaseLock();
+			killerClient.freeLock();
 		} else {
 			print("No player found with id: " + peerPacket.playerID);
 		}
@@ -370,14 +370,14 @@ public class MazewarP2PHandler extends Thread {
 			Client killerClient = (playerOps.get(firePlayerID)).player;
 			Client victimClient = (playerOps.get(victimPlayerID)).player;
 
-			killerClient.getLock();
+			killerClient.acquireLock();
 
 			Point point = dpIn.playerLocation;
 			Direction direction = dpIn.playerDirection;
 			maze.setClient(killerClient, victimClient, point, direction);
 			victimClient.setKilledTo(false);
 
-			killerClient.releaseLock();
+			killerClient.freeLock();
 		} else {
 			print("No player found with id: " + dpIn.playerID);
 		}

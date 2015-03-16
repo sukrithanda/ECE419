@@ -126,11 +126,11 @@ public abstract class Client implements Serializable{
             this.isKilled = result;
         }
         
-        public void getLock(){
+        public void acquireLock(){
             this.lock.lock();
         }
 
-        public void releaseLock(){
+        public void freeLock(){
             this.lock.unlock();
         }
         /* Internals ******************************************************/        

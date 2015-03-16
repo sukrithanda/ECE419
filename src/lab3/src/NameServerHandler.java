@@ -17,6 +17,14 @@ public class NameServerHandler extends Thread {
         NameServerHandler.clientHash = clientHash;
     }
 
+    int test = 1;
+    
+    public void print(String str) {
+        if (test == 1) {
+            System.out.println("DEBUG: (NameServerHandler) " + str);
+        }
+    }
+    
     public void run() {
         try {
             ObjectInputStream server_in = new ObjectInputStream(s.getInputStream());
@@ -30,18 +38,18 @@ public class NameServerHandler extends Thread {
 				    DataPacket packetOutgoing = new DataPacket();
 				    
 				    if(packetIncoming.scenarioType == DataPacket.NS_REGISTER) {
-				        System.out.println("From Client: LOOKUP_REGISTER ");
+				        print("Player request to register on NameServer");
 
 				        packetOutgoing.scenarioType = DataPacket.NS_REGISTER;
 				        
-				        System.out.println("NameServer is registering new client.");
-				        System.out.println("IP: " + packetIncoming.hostName + " Port: " + packetIncoming.portNum);
+				        print("New Player registered on NameServer");
+				        print("Port: " + packetIncoming.portNum + "; IP Address: " + packetIncoming.hostName);
 
 				        
 				        int portinuse = 0;
 				        for(Entry<Integer, DataPacket> entry: clientHash.entrySet()) {
 				        	if(clientHash.get(Integer.valueOf(entry.getKey().toString())).portNum == packetIncoming.portNum){
-				        		System.out.println("ERROR: port already in use ");
+				        		print("Port is not available " + packetIncoming.portNum);
 				        		packetOutgoing.errType = DataPacket.ERR_RESERVED_NS_PORT;
 				        		server_out.writeObject(packetOutgoing);
 				        		portinuse = 1;
@@ -63,10 +71,10 @@ public class NameServerHandler extends Thread {
 				        while(clientHash.putIfAbsent(newID, newClient) != null){
 				            newID++;
 				        }
-				        System.out.print("New client ID is "  + newID);
-
-        
-				        System.out.println("To Client: registration  success ");
+				        
+				        print("New player's ID is "  + newID);
+				        print("NameServer informing player of successful registration");
+				        
 				        packetOutgoing.playerID = newID;
 				        packetOutgoing.errType = 0;
 
@@ -82,11 +90,11 @@ public class NameServerHandler extends Thread {
 				    if (packetIncoming.scenarioType == DataPacket.NS_QUIT) {
 				        packetOutgoing.scenarioType = DataPacket.NS_RESPONSE;
 
-				        System.out.println("From Client: CLIENT_QUIT ");
+				        print("Player request to quit");
 
 				        clientHash.remove(packetIncoming.playerID);
 
-				        System.out.println("To Client: Removed from naming service.");
+				        print("Player deleted from NameServer");
 				        server_out.writeObject(packetOutgoing);
 				        continue;
 				    }

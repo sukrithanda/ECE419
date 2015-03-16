@@ -22,9 +22,6 @@ public class ClientRecieverThread extends Thread {
     DataPacketManager packetManager = null;
     Socket remoteS = null;
 
-    boolean kill = false;
-    boolean DEBUG = true;
-
     public ClientRecieverThread (MazewarP2PHandler clientHandler, Socket socket, 
     		DataPacketManager listener, Broadcaster broadcaster) throws IOException {
         try {
@@ -38,6 +35,15 @@ public class ClientRecieverThread extends Thread {
         }
     }
 
+    boolean kill = false;
+    int test = 1;
+    
+    public void print(String str) {
+        if (test == 1) {
+            System.out.println("DEBUG: (ClientReceiverThread) " + str);
+        }
+    }
+    
     public void run() {
         try {
             inStream = new ObjectInputStream(remoteS.getInputStream());
@@ -244,7 +250,7 @@ public class ClientRecieverThread extends Thread {
 
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.out.println("listener done broke");
+                            print("listener done broke");
                         }
                         continue;	  
                     case DataPacket.PLAYER_ORDER_VAL:
@@ -279,16 +285,16 @@ public class ClientRecieverThread extends Thread {
                         break;
                     case DataPacket.PLAYER_FREE_SEMAPHORE:
                     	packetManager.freeSemaphore(1);
-                    	System.out.println("Released a semaphore");
+                    	print("Freed semaphore");
                     	break;
                     default:
-                        System.out.println("Client Receiver Could not recognize packet type");
+                        System.out.println("Unkown type of DataPacket");
                         break;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("listener done broke");
+            print("thread not working");
         }
     }
 
@@ -298,10 +304,4 @@ public class ClientRecieverThread extends Thread {
 	    dp.lampClk = clockLamport;
     	return dp;
     }
-    public void print(String s) {
-        if (DEBUG) {
-            System.out.println("DEBUG: (ClientReceiverThread) " + s);
-        }
-    }
-
 }
