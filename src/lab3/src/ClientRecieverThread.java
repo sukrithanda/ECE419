@@ -50,8 +50,9 @@ public class ClientRecieverThread extends Thread {
         try {
             inStream = new ObjectInputStream(remoteS.getInputStream());
             while (((packetIn = (DataPacket) inStream.readObject()) != null) && !kill) {
+  assert(packetIn != null);
                 print("Received packet type: " + packetIn.scenarioType);
-                
+               
                 DataPacket dataPacket = new DataPacket();
 
                 /* Process each packet */
@@ -67,7 +68,7 @@ public class ClientRecieverThread extends Thread {
                         if(requested_lc >= logical_CLK){
                             print("incrementing my lc after recieving CLIENT_CLOCK packet");
                             // Clock is valid!
-                            if(requested_lc == 19){
+                            if(requested_lc == 24){
                             	packetManager.initLampClk(0);
                             } else {
                             	packetManager.initLampClk(++requested_lc);

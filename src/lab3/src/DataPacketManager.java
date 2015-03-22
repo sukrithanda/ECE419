@@ -119,7 +119,7 @@ public class DataPacketManager implements Serializable {
     /* Lamport clock tick */
     public Integer incrLampClk() {
         lampClk++;
-        if(lampClk == 20)
+        if(lampClk == 25)
         	lampClk = 0;
         return lampClk;
     }

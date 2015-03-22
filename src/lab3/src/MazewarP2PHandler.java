@@ -54,7 +54,7 @@ public class MazewarP2PHandler extends Thread {
 	DataPacket nameServerPacket = new DataPacket();
 
 	int orderVal;
-	int LAMPORT_LIMIT = 20;
+	int LAMPORT_LIMIT = 25;
 	DataPacket[] orderOps = new DataPacket[LAMPORT_LIMIT];
 
 	boolean exitGame = false;
