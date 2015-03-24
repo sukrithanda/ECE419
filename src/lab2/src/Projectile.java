@@ -25,6 +25,11 @@ USA.
 
 public class Projectile {
 
+		/**
+	     * Used to flag dead projectiles
+	     */
+	    public boolean bulletDestroyed = false;
+    
         /**
          * The {@link Client} that owns this {@link Projectile}.
          */

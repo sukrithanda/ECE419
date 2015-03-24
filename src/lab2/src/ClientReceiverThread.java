@@ -10,7 +10,7 @@ public class ClientReceiverThread implements Runnable {
        for(;;) {
             DataPacket data = (DataPacket) connection.receiveData();
             client.input.add(data);
-            System.out.println("CLIENT_RECEIVER_THREAD: " + data);
+            System.out.println("CLIENT_RECEIVER_THREAD: " + data.type);
         }
     }
     

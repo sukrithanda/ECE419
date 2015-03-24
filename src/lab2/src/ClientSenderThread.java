@@ -10,7 +10,7 @@ public class ClientSenderThread implements Runnable {
             if (client.output.peek() != null) {
             	DataPacket data = client.output.poll();
                 connection.sendData(data);
-                System.out.println("CLIENT_SENDER_THREAD: " + data);
+                System.out.println("CLIENT_SENDER_THREAD: " + data.type);
             }
         }
     }
