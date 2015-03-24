@@ -123,6 +123,51 @@ public class Mazewar extends JFrame {
                 System.exit(0);
         }
        
+        // thread to receive messages from the server
+        public class ClientReceiverThread implements Runnable {
+
+        	private ConnectServer connection = null;
+        	final private GUIClient client;
+
+        	/* This thread receives data packets from the server, and adds
+        	 * them into the input queue */
+            public void run() {
+               for(;;) {
+                    DataPacket data = (DataPacket) connection.receiveData();
+                    client.input.add(data);
+                    System.out.println("CLIENT_RECEIVER_THREAD: " + data.type + "; player id: " + data.id);
+                }
+            }
+            
+            public ClientReceiverThread (ConnectServer set_connection, GUIClient set_client) {
+            	connection = set_connection;
+            	client = set_client;
+            }
+        }
+        
+        // thread to send messages to the server
+        public class ClientSenderThread implements Runnable {
+
+        	private ConnectServer connection = null;
+        	final private GUIClient client;
+        	
+        	/* This thread sends data packets in the output queue to the server */
+            public void run() {
+                for (;;) {
+                    if (client.output.peek() != null) {
+                    	DataPacket data = client.output.poll();
+                        connection.sendData(data);
+                        System.out.println("CLIENT_SENDER_THREAD: " + data.type + "; player id: " + data.id);
+                    }
+                }
+            }
+            
+            public ClientSenderThread (ConnectServer set_connection, GUIClient set_client) {
+            	connection = set_connection;
+            	client = set_client;
+            }
+        }
+        
         /** 
          * The place where all the pieces are put together. 
          */
@@ -168,15 +213,6 @@ public class Mazewar extends JFrame {
 
                 /* This function starts the background threads to receive and send messages */
                 initBackgroundThreads(connection);
-                
-                // Use braces to force constructors not to be called at the beginning of the
-                // constructor.
-                // {
-                //         maze.addClient(new RobotClient("Norby"));
-                //         maze.addClient(new RobotClient("Robbie"));
-                //         maze.addClient(new RobotClient("Clango"));
-                //         maze.addClient(new RobotClient("Marvin"));
-                // }
 
                 /* Setup the user environment and let the players start the game */
                 setEnvToStartGame();
@@ -263,9 +299,9 @@ public class Mazewar extends JFrame {
 
 		private void initBackgroundThreads(ConnectServer connection) {
 			// TODO Auto-generated method stub
-            new Thread(new ClientActionOperator(maze, this, guiClient)).start();
-            new Thread(new ClientSenderThread(connection, guiClient)).start();
+			new Thread(new ClientSenderThread(connection, guiClient)).start();
             new Thread(new ClientReceiverThread(connection, guiClient)).start();
+            new Thread(new ClientActionOperator(maze, this, guiClient)).start();
 		}
 
 		private void getUserInputs() {

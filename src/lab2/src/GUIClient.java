@@ -34,8 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GUIClient extends LocalClient implements KeyListener {
 
 	    final public ConcurrentHashMap id_client = new ConcurrentHashMap();
-	    public AtomicBoolean init_check = new AtomicBoolean(false);
-	    public AtomicBoolean start_check = new AtomicBoolean(false);
+	    
 	    final public Queue<DataPacket> input = new ConcurrentLinkedQueue<DataPacket>();
 	    final public Queue<DataPacket> output = new ConcurrentLinkedQueue<DataPacket>();
 	
@@ -99,6 +98,9 @@ public class GUIClient extends LocalClient implements KeyListener {
 //                        fire();
 //                }
 //        }
+        
+        public AtomicBoolean init_check = new AtomicBoolean(false);
+	    public AtomicBoolean start_check = new AtomicBoolean(false);
         
         /**
          * Handle a key release. Not needed by {@link GUIClient}.
