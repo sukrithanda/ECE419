@@ -20,7 +20,7 @@ public class ClientActionOperator implements Runnable {
                
 	            DataPacket packet = (DataPacket) client.input.poll();
 	            
-	            System.out.println("DEBUG - EXECUTING: " + packet);
+	            System.out.println("DEBUG - EXECUTING: " + packet.type + "; player id: " + packet.id);
 
 	            /* Inform server of a new player */
 	            if (packet.type == DataPacket.SET_ID) {
