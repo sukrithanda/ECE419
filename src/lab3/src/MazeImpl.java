@@ -447,18 +447,13 @@ public class MazeImpl extends Maze implements Serializable, ClientListener, Runn
             } else {
                 // Bullets destroy each other
                 assert(contents instanceof Projectile);
-
                 newCell.setContents(null); 
                 cell.setContents(null);
-
                 deadPrj.add(prj);
                 deadPrj.add(contents);
-
-                Projectile other_prj = (Projectile) contents;
-                other_prj.bulletDestroyed = true;
-
+                Projectile tempPrj = (Projectile) contents;
+                tempPrj.bulletDestroyed = true;
                 update();
-
                 return deadPrj;
             } 
         } else if (prj.bulletDestroyed){

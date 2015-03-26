@@ -31,24 +31,6 @@ public class ServerBroadcastThread extends Thread {
                   e.printStackTrace();
               }
             }
-            
-            
-            
-//            Enumeration enum_clients = server.clients.elements();
-//            while (enum_clients.hasMoreElements()){
-//                ClientTracker client = (ClientTracker)enum_clients.nextElement();
-//
-//                try {
-//                    for(int i = 0; i <bufferContents.length; i++){
-//                        //client.sendObject(bufferContents[i]);
-//                        client.outputStream.writeObject(bufferContents[i]);
-//
-//                        System.out.println(">>>"+client.name);
-//                    }
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
 
             if (bufferContents.length != 0) {
                 System.out.println("buffer not empty need to send "+ bufferContents.length +" packets from bufferQ to "+ server.clients.size() +" clients.");
