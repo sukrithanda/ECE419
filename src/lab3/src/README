@@ -1,0 +1,18 @@
+# Compiling source:
+
+cd src/
+make clean; make
+
+# Starting NameServer:
+
+# Port Number (8000) can be different
+cd src/
+java NameServer 8000
+
+# Starting Mazewar:
+
+# GUI dialogs will ask for player name, local listener port, 
+# NameServer host name and NameServer port number
+cd src/
+java Mazewar
+
